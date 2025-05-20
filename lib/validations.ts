@@ -26,3 +26,20 @@ export const signInSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
 });
+
+export const bookSchema = z.object({
+    title: z.string().trim().min(2).max(100),
+    author: z.string().trim().min(2).max(100),
+    genre: z.string().trim().min(2).max(50),
+    rating: z.number().min(1).max(5),
+    progress: z.number().min(0).max(100),
+    preorder: z.boolean(),
+    price: z.number().nonnegative().optional(),
+    totalCopies: z.coerce.number().int().positive(),
+    isbn: z.string().optional(),
+    description: z.string().max(1000).optional(),
+    coverUrl: z.string().nonempty(),
+    coverColor: z.string().trim().regex(/^#[0-9A-F]{6}$/i),
+    pdfUrl: z.string().nonempty(),
+    content: z.string(),
+})

@@ -9,8 +9,8 @@ interface Book {
     description: string;
     color: string;
     cover: string;
-    video: string;
-    summary: string;
+    pdfUrl: string;
+    content: string;
     isLoanedBook?: boolean;
 }
 

@@ -16,27 +16,27 @@ export const adminSideBarLinks = [
   {
     img: "/icons/admin/home.svg",
     route: "/admin",
-    text: "Home",
+    text: "Trang chủ",
   },
   {
     img: "/icons/admin/users.svg",
     route: "/admin/users",
-    text: "All Users",
+    text: "Thành viên",
   },
   {
     img: "/icons/admin/book.svg",
     route: "/admin/books",
-    text: "All Books",
+    text: "Kho sách",
   },
   {
     img: "/icons/admin/bookmark.svg",
     route: "/admin/book-requests",
-    text: "Borrow Requests",
+    text: "Quản lí đơn hàng",
   },
   {
     img: "/icons/admin/user.svg",
     route: "/admin/account-requests",
-    text: "Account Requests",
+    text: "Yêu cầu tài khoản",
   },
 ];
 

@@ -9,10 +9,10 @@ const layout = async ({ children } : { children : ReactNode }) => {
   if (!session) redirect("login");
   return (
     <main className='root-container'>
-        <div className='mx-auto max-w-7xl'>
+        <div className='mx-auto max-w-8xl'>
             <Header session = {session} />
 
-            <div className='mt-10 pb-20'>
+            <div className='mt-10 pb-5'>
             {children}
             </div>
         </div>

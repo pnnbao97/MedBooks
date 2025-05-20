@@ -1,5 +1,6 @@
 import BookList from "@/components/BookList";
 import BookOverview from "@/components/BookOverview";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { sampleBooks } from "@/constants";
 import { db } from "@/database/drizzle";
@@ -18,6 +19,7 @@ const Home = async () => {
         books={sampleBooks}
         containerClassName="mt-28"
       />
+      <Footer />
     </>
   );
 }
