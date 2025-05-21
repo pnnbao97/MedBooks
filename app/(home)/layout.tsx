@@ -12,7 +12,7 @@ const layout = async ({children}: {children: ReactNode}) => {
     // if(!session?.user?.id) redirect("login");
 
   return (
-    <main className='flex min-h-screen w-full flex-col'>
+    <main className='flex min-h-screen w-full flex-col bg-slate-50'>
 
         <div className=''>
  <Navbar />
