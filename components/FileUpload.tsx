@@ -5,15 +5,16 @@ import {
   Image,
   ImageKitProvider,
   upload,
-  ImageKitAbortError,
-  ImageKitInvalidRequestError,
-  ImageKitUploadNetworkError,
-  ImageKitServerError,
 } from "@imagekit/next";
 import config from "@/lib/config";
 import { Button } from "./ui/button";
 
-const FileUpload = () => {
+interface FileUploadProps {
+  accept: "image" | "pdf";
+  onChange?: (url: string) => void; // Thêm prop onChange
+}
+
+const FileUpload = ({ accept, onChange }: FileUploadProps) => {
   const [progress, setProgress] = useState(0);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [fileType, setFileType] = useState<"image" | "pdf" | null>(null);
@@ -44,7 +45,7 @@ const FileUpload = () => {
   const handleUpload = async () => {
     const fileInput = fileInputRef.current;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-      alert("Please select a file to upload");
+      alert("Chọn file để tải lên");
       return;
     }
 
@@ -52,9 +53,17 @@ const FileUpload = () => {
     const isImage = file.type.startsWith("image/");
     const isPDF = file.type === "application/pdf";
 
-    if (!isImage && !isPDF) {
-      alert("Please upload an image or PDF file");
-      return;
+    if (accept === "image") {
+      if (!isImage) {
+        alert("Chỉ upload file ảnh");
+        return;
+      }
+    }
+    if (accept === "pdf") {
+      if (!isPDF) {
+        alert("Chỉ upload file pdf");
+        return;
+      }
     }
 
     let authParams;
@@ -90,9 +99,8 @@ const FileUpload = () => {
 
       setUploadedFileUrl(uploadResponse.url);
       setFileType(isImage ? "image" : "pdf");
-      console.log("Upload successful:", uploadResponse);
+      onChange?.(uploadResponse.url); // Gọi onChange để truyền URL ra ngoài
     } catch (error: any) {
-      console.error("Upload error:", error);
       alert("Upload failed: " + (error.message || "Unknown error"));
     }
   };
@@ -110,21 +118,25 @@ const FileUpload = () => {
           ref={fileInputRef}
           accept="image/*,application/pdf"
         />
-        <div className="flex flex-wrap gap-4">
-        <Button onClick={handleUpload}>
+        <div className="flex flex-wrap gap-4 mt-2">
+        <Button onClick={handleUpload} className="rounded-3xl bg-blue-900 text-white">
           Tải file
         </Button>
         
-        <Button type="button" onClick={handleCancel} disabled={progress === 0}>
+        <Button type="button" onClick={handleCancel} disabled={progress === 0} className="rounded-3xl bg-blue-900 text-white">
           Hủy bỏ
         </Button>
         </div>
         <br />
-        <p>Tiến độ: <progress value={progress} max={100} /></p>
-
+        {/* <p>Tiến độ: <progress value={progress} max={100} /></p> */}
+        {progress >0 && progress !== 100 && (
+          <div className="w-full rounded-full bg-green-200">
+            <div className="progress" style={{ width: `${progress}%`}}></div>
+          </div>
+        )}
         {uploadedFileUrl && fileType === "image" && (
           <div>
-            <h3>Uploaded Image:</h3>
+            <h3>Bìa sách xem trước:</h3>
             <Image
               src={uploadedFileUrl}
               width={700}

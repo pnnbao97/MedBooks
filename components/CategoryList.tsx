@@ -97,7 +97,7 @@ const CategoryList: React.FC = () => {
   ]
 
   return (
-    <div className="px-10 relative">
+    <div className="px-30 relative">
       <Carousel
         opts={{
           align: "start",
@@ -107,7 +107,7 @@ const CategoryList: React.FC = () => {
       >
         <CarouselContent className="-ml-4">
           {categories.map((category) => (
-            <CarouselItem key={category.id} className="pl-4 md:basis-1/2 lg:basis-1/4 xl:basis-1/6">
+            <CarouselItem key={category.id} className="pl-4 md:basis-1/2 lg:basis-1/4">
               <Link href={category.link}>
                 <div className="relative bg-slate-100 w-full h-96">
                   <Image
@@ -122,8 +122,8 @@ const CategoryList: React.FC = () => {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white shadow-md" />
-        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white shadow-md" />
+        <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-amber-400 shadow-md" />
+        <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-amber-400 shadow-md" />
       </Carousel>
     </div>
   )

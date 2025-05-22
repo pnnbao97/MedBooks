@@ -21,7 +21,7 @@ export const adminSideBarLinks = [
   {
     img: "/icons/admin/users.svg",
     route: "/admin/users",
-    text: "Thành viên",
+    text: "Quản lí thành viên",
   },
   {
     img: "/icons/admin/book.svg",
@@ -36,7 +36,7 @@ export const adminSideBarLinks = [
   {
     img: "/icons/admin/user.svg",
     route: "/admin/account-requests",
-    text: "Yêu cầu tài khoản",
+    text: "Viết bài",
   },
 ];
 

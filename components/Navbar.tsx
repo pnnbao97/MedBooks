@@ -1,11 +1,83 @@
 // components/Navbar.tsx
 'use client';
 import Link from "next/link";
-import Menu from "@/components/Menu";
 import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 import NavIcons from "./NavIcons";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import Menu from "@/components/Menu";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import * as React from "react";
+import { cn } from "@/lib/utils";
+
+// Các thành phần danh mục sách (có thể thay thế bằng dữ liệu thực tế của bạn)
+const bookCategories: { title: string; href: string; description: string }[] = [
+  {
+    title: "Y học cơ bản",
+    href: "/category/basic-medicine",
+    description: "Sách về giải phẫu học, sinh lý học và các nguyên lý y học cơ bản.",
+  },
+  {
+    title: "Dược học",
+    href: "/category/pharmacy",
+    description: "Sách về dược lý học, điều chế thuốc và dược phẩm.",
+  },
+  {
+    title: "Nhi khoa",
+    href: "/category/pediatrics",
+    description: "Sách chuyên về chăm sóc và điều trị bệnh lý ở trẻ em.",
+  },
+  {
+    title: "Nội khoa",
+    href: "/category/internal-medicine",
+    description: "Sách về các bệnh nội khoa và phương pháp điều trị.",
+  },
+  {
+    title: "Ngoại khoa",
+    href: "/category/surgery",
+    description: "Sách về phẫu thuật và các kỹ thuật phẫu thuật.",
+  },
+  {
+    title: "Y học cổ truyền",
+    href: "/category/traditional-medicine",
+    description: "Sách về các phương pháp điều trị y học cổ truyền và thảo dược.",
+  },
+];
+
+// ListItem component cho menu
+const ListItem = React.forwardRef<
+  React.ElementRef<typeof Link>,
+  React.ComponentPropsWithoutRef<typeof Link> & { title: string }
+>(({ className, title, children, ...props }, ref) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <Link
+          ref={ref}
+          className={cn(
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-blue-700 hover:text-white focus:bg-blue-700 focus:text-white",
+            className
+          )}
+          {...props}
+        >
+          <div className="text-sm font-medium leading-none">{title}</div>
+          <p className="line-clamp-2 text-sm leading-snug text-blue-100">
+            {children}
+          </p>
+        </Link>
+      </NavigationMenuLink>
+    </li>
+  );
+});
+ListItem.displayName = "ListItem";
 
 const Navbar = () => {
   return (
@@ -27,10 +99,45 @@ const Navbar = () => {
             <Image src="/icons/admin/logo.svg" alt="" width={37} height={37} />
             <div className="tracking-wide">MedBooks</div>
           </Link>
-          <div className="hidden xl:flex gap-12">
-            <Link href="/">Trang chủ</Link>
-            <Link href="/">Danh mục sách</Link>
-            <Link href="/">Liên hệ</Link>
+          
+          {/* Navigation Menu mới từ shadcn/ui */}
+          <div className="hidden xl:block">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link href="/" className={navigationMenuTriggerStyle()}>
+                      Trang chủ
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Danh mục sách</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                      {bookCategories.map((category) => (
+                        <ListItem
+                          key={category.title}
+                          title={category.title}
+                          href={category.href}
+                        >
+                          {category.description}
+                        </ListItem>
+                      ))}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link href="/contact" className={navigationMenuTriggerStyle()}>
+                      Liên hệ
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
           </div>
         </div>
         {/* RIGHT */}
