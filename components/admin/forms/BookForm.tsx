@@ -29,6 +29,8 @@ import { FIELD_NAMES } from '@/constants'
 import { Textarea } from '@/components/ui/textarea'
 import FileUpload from '@/components/FileUpload'
 import ColorPicker from '../ColorPicker'
+import { createBook } from '@/lib/admin/actions/book'
+import { toast } from 'sonner'
 
 // Danh sách chuyên ngành y khoa
 const medicalSpecialties = [
@@ -105,7 +107,12 @@ const selectedRelatedBooks = form.watch("relatedBooks")
   const shouldShowPricing = isCompleted || preorder
 
   const onSubmit = async (values: z.infer<typeof bookSchema>) => {
-    console.log(values)
+    const result = await createBook(values);
+
+    if(result.success) {
+      toast("Đăng sách thành công")
+    }
+
     
   }
 

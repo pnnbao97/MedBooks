@@ -1,4 +1,4 @@
-import { integer, varchar, text, timestamp, pgTable, uuid, pgEnum, date } from "drizzle-orm/pg-core";
+import { integer, varchar, text, timestamp, pgTable, uuid, pgEnum, date, boolean } from "drizzle-orm/pg-core";
 
 export const STATUS_ENUM = pgEnum('status', ['PENDING', 'APPROVED', 'REJECTED']);
 export const ROLE_ENUM = pgEnum('role', ['USER', 'ADMIN']);
@@ -18,13 +18,43 @@ export const users = pgTable("users", {
 
 export const books = pgTable("books", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  title: varchar("title", { length: 255 }).notNull(),
-  price: integer("price").notNull(),
-  description: text("description"),
-  imageUrl: varchar("image_url", { length: 2048 }),
-  category: varchar("category", { length: 100 }),
-  author: varchar("author", { length: 255 }),
-  stock: integer("stock").notNull().default(0),
+  
+  // Thông tin cơ bản
+  title: varchar("title", { length: 100 }).notNull(), // Giảm từ 255 xuống 100 theo schema
+  author: varchar("author", { length: 100 }).notNull(), // Giảm từ 255 xuống 100 theo schema
+  primarySpecialty: varchar("primary_specialty", { length: 100 }).notNull(), // Thay đổi từ category
+  relatedSpecialties: text("related_specialties").array().default([]), // Mảng chuyên ngành liên quan
+  relatedBooks: text("related_books").array().default([]), // Mảng sách liên quan
+  detail: text("detail").notNull(), // Thay đổi từ description, max 500 ký tự
+  description: varchar("description", { length: 1000 }), // Mô tả ngắn, tối da 100 ký tự
+  content: text("content"), // Mục lục sách
+  
+  // Thông tin số lượng và ISBN
+  availableCopies: integer("available_copies").notNull().default(0), // Thay đổi từ stock
+  isbn: varchar("isbn", { length: 50 }),
+  
+  // Thông tin file và hình ảnh
+  coverUrl: varchar("cover_url", { length: 2048 }).default(""), // Thay đổi từ imageUrl
+  coverColor: varchar("cover_color", { length: 7 }).default(""), // Hex color code
+  pdfUrl: varchar("pdf_url", { length: 2048 }).default(""),
+  previewImages: text("preview_images").array().default([]), // Tối đa 6 trang xem trước
+  
+  // Trạng thái sách
+  isCompleted: boolean("is_completed").notNull().default(true),
+  
+  // Thông tin đặt trước
+  preorder: boolean("preorder").notNull().default(false),
+  predictDate: varchar("predict_date", { length: 50 }), // Ngày dự kiến ra mắt
+  
+  // Thông tin giá (thay đổi từ price duy nhất)
+  colorPrice: integer("color_price").notNull().default(0), // Giá bản màu
+  photoPrice: integer("photo_price").notNull().default(0), // Giá bản photo
+  
+  // Thông tin sale cho bản màu
+  hasColorSale: boolean("has_color_sale").notNull().default(false),
+  colorSaleAmount: integer("color_sale_amount").notNull().default(0),
+  
+  // Timestamps
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }),
 });

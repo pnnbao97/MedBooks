@@ -1,7 +1,9 @@
-import Add from '@/components/Add'
-import CustomizeProducts from '@/components/CustomizeProducts'
-import ProductImages from '@/components/ProductImages'
-import React from 'react'
+'use client';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Add from '@/components/Add';
+import CustomizeProducts from '@/components/CustomizeProducts';
+import ProductImages from '@/components/ProductImages';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,96 +11,228 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+} from '@/components/ui/breadcrumb';
+import { useParams } from 'next/navigation';
+import { getBookById } from '@/lib/admin/actions/book';
+import { format } from 'date-fns';
 
+// Medical specialties mapping
+const medicalSpecialties = [
+  { value: "noi-khoa", label: "Nội khoa" },
+  { value: "ngoai-khoa", label: "Ngoại khoa" },
+  { value: "san-phu-khoa", label: "Sản phụ khoa" },
+  { value: "nhi-khoa", label: "Nhi khoa" },
+  { value: "nhan-khoa", label: "Nhãn khoa" },
+  { value: "tai-mui-hong", label: "Tai mũi họng" },
+  { value: "da-lieu", label: "Da liễu" },
+  { value: "tinh-than", label: "Tâm thần" },
+  { value: "than-kinh", label: "Thần kinh" },
+  { value: "tim-mach", label: "Tim mạch" },
+  { value: "ho-hap", label: "Hô hấp" },
+  { value: "tieu-hoa", label: "Tiêu hóa" },
+  { value: "noi-tiet", label: "Nội tiết" },
+  { value: "than-tiet-nieu", label: "Thận - Tiết niệu" },
+  { value: "co-xuong-khop", label: "Cơ xương khớp" },
+  { value: "ung-buou", label: "Ung bướu" },
+  { value: "gay-me-hoi-suc", label: "Gây mê hồi sức" },
+  { value: "cap-cuu", label: "Cấp cứu" },
+  { value: "truyen-nhiem", label: "Truyền nhiễm" },
+  { value: "cdha", label: "Chẩn đoán hình ảnh" },
+  { value: "huyet-hoc", label: "Huyết học" },
+  { value: "co-so", label: "Y học cơ sở" },
+  { value: "y-hoc-gia-dinh", label: "Y học gia đình" }
+];
+
+const getSpecialtyLabel = (value: string) => {
+  const specialty = medicalSpecialties.find(s => s.value === value);
+  return specialty ? specialty.label : value;
+};
 
 const SinglePage = () => {
+  const { id, slug, home } = useParams();
+  const [book, setBook] = useState<Book | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [displayPrice, setDisplayPrice] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchBook = async () => {
+      const bookId = id || slug;
+      if (bookId) {
+        try {
+          setLoading(true);
+          setError(null);
+          const response = await getBookById(Number(bookId));
+          if (response.success && response.data) {
+            setBook(response.data);
+            setDisplayPrice(
+              response.data.hasColorSale
+                ? response.data.colorPrice - response.data.colorSaleAmount
+                : response.data.colorPrice
+            );
+          } else {
+            setBook(null);
+            setError(response.message || 'Không tìm thấy sách');
+          }
+        } catch (error) {
+          console.error('Error fetching book:', error);
+          setError('Lỗi khi tải dữ liệu sách');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+        setError('Không có ID sách');
+      }
+    };
+
+    fetchBook();
+  }, [id, slug]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <p>Đang tải...</p>
+        <p className="text-sm text-gray-500 mt-2">ID: {id || slug}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">{error}</p>
+        <p className="text-sm text-gray-500 mt-2">Params: {JSON.stringify({ id, slug, home })}</p>
+      </div>
+    );
+  }
+
+  if (!book) {
+    return (
+      <div className="text-center py-8">
+        <p>Không tìm thấy sách.</p>
+        <p className="text-sm text-gray-500 mt-2">ID: {id || slug}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className='flex flex-col px-4 py-8 md:px-8 lg:px-16 xl:px-32 2xl:px-64'>
-    {/* BREADCRUMB */}
-    <div className='mb-4'>
-    <Breadcrumb>
-  <BreadcrumbList>
-    <BreadcrumbItem>
-      <BreadcrumbLink href="/">Home</BreadcrumbLink>
-    </BreadcrumbItem>
-    <BreadcrumbSeparator />
-    <BreadcrumbItem>
-      <BreadcrumbLink href="/components">Components</BreadcrumbLink>
-    </BreadcrumbItem>
-    <BreadcrumbSeparator />
-    <BreadcrumbItem>
-      <BreadcrumbPage>Breadcrumb</BreadcrumbPage>
-    </BreadcrumbItem>
-  </BreadcrumbList>
-</Breadcrumb>
-</div> 
-    <div className=' relative flex flex-col lg:flex-row gap-16'>
-        
+    <div className="flex flex-col px-4 py-8 md:px-8 lg:px-16 xl:px-32 2xl:px-64">
+      {/* BREADCRUMB */}
+      <div className="mb-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Tất cả</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/books/${book.primarySpecialty}`}>
+                {getSpecialtyLabel(book.primarySpecialty)}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{book.title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+      <div className="relative flex flex-col lg:flex-row gap-16">
         {/* IMG */}
-        <div className='w-full lg:w-1/2 top-20 h-max'>
-          <ProductImages/>
+        <div className="w-full lg:w-1/2 top-20 h-max">
+          <ProductImages previewImages={book.previewImages} pdfUrl={book.pdfUrl} />
         </div>
         {/* TEXT */}
-        <div className='w-full lg:w-1/2 flex flex-col gap-6'>
-          <h1 className='text-4xl font-medium capitaulze text-blue-900'>Y học cấp cứu của Tintinalli</h1>
-          <h2 className='text-xl font-semibold text-blue-700'>Tác giả F. Gary Cunningham</h2>
-          <p className='font-sans text-justify text-gray-800'>
-            Qua 26 phiên bản, Wilulams Obstetrics đã hướng đến việc phục vụ các bác sĩ sản khoa và hộ sinh đang hành nghề trong việc chăm sóc bệnh nhân tại giường bệnh. Với các giải thích chi tiết về cơ chế bệnh lý và nguyên tắc điều trị, cuốn sách cung cấp một tài ulệu nền tảng cho các bác sĩ nội trú đang đào tạo trong lĩnh vực Sản khoa hoặc các chuyên khoa Y học Gia đình. Các nghiên cứu sinh chuyên ngành Y học Bà mẹ - Thai nhi sẽ được hưởng lợi từ các thảo luận bổ sung về các bệnh lý phức tạp và cách quản lý. Cuối cùng, Wilulams Obstetrics có thể hỗ trợ các chuyên gia đóng vai trò tư vấn cho phụ nữ mang thai mắc các rối loạn không ulên quan đến thai kỳ. Cụ thể, mỗi chương trong Phần 12 tập trung vào một hệ cơ quan cụ thể, các thay đổi sinh lý bình thường và các rối loạn thường gặp của hệ cơ quan đó trong thai kỳ, cùng với các lựa chọn điều trị phù hợp.
-          </p>
-          <div className='h-[2px] bg-gray-100'/>
-          <div className='flex items-center gap-4'>
-            <h3 className='text-xl text-gray-500 ulne-through'>1.500.000 VNĐ</h3>
-            <h2 className='font-medium text-2xl'>1.000.000 VNĐ</h2>
+        <div className="w-full lg:w-1/2 flex flex-col gap-6">
+          <h1 className="text-4xl font-medium capitalize text-blue-900">{book.title}</h1>
+          <h2 className="text-xl font-semibold text-blue-700">Tác giả: {book.author}</h2>
+          <p className="font-sans text-justify text-gray-800">{book.description}</p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/books/${book.primarySpecialty}`}
+              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
+            >
+              {getSpecialtyLabel(book.primarySpecialty)}
+            </Link>
+            {book.relatedSpecialties.map((specialty) => (
+              <Link
+                key={specialty}
+                href={`/books/${specialty}`}
+                className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
+              >
+                {getSpecialtyLabel(specialty)}
+              </Link>
+            ))}
           </div>
-          <div className='h-[2px] bg-gray-100'/>
-          <CustomizeProducts/>
-          <Add/>
-          <div className='h-[2px] bg-gray-100'/>
-          <div className=''>
-            <h4 className='font-medium mb-4'>CHI TIẾT</h4>
-            <p>Nhà xuất bản: McGraw Hill
-              <br/> Ấn bản lần 9
-              <br/> Ngôn ngữ: Tiếng Việt
-              <br/> Số trang: 2160
-            </p>
-          </div>
-          <div className='h-[2px] bg-gray-100'/>
-<div className='font-semibold'>
-            <h4 className='font-medium mb-4'>MỤC LỤC</h4>
-            <ul className='ulst-decimal pl-5 space-y-2'>
-                <ul>Phần 1: Chăm sóc trước viện</ul>
-                <ul>Phần 2: Quản lý thảm họa</ul>
-                <ul>Phần 3: Hồi sức</ul>
-                <ul>Phần 4: Các thủ thuật hồi sức</ul>
-                <ul>Phần 5: Giảm đau, gây mê và an thần thủ thuật</ul>
-                <ul>Phần 6: Quản lý vết thương</ul>
-                <ul>Phần 7: Bệnh tim mạch</ul>
-                <ul>Phần 8: Rối loạn phổi</ul>
-                <ul>Phần 9: Rối loạn tiêu hóa</ul>
-                <ul>Phần 10: Rối loạn thận và tiết niệu sinh dục</ul>
-                <ul>Phần 11: Sản khoa và phụ khoa</ul>
-                <ul>Phần 12: Nhi khoa</ul>
-                <ul>Phần 13: Bệnh truyền nhiễm</ul>
-                <ul>Phần 14: Thần kinh học</ul>
-                <ul>Phần 15: Độc học</ul>
-                <ul>Phần 16: Chấn thương do môi trường</ul>
-                <ul>Phần 17: Rối loạn nội tiết</ul>
-                <ul>Phần 18: Rối loạn huyết học và ung thư</ul>
-                <ul>Phần 19: Rối loạn mắt, tai, mũi, họng và miệng</ul>
-                <ul>Phần 20: Da liễu</ul>
-                <ul>Phần 21: Chấn thương</ul>
-                <ul>Phần 22: Chấn thương chỉnh hình</ul>
-                <ul>Phần 23: Rối loạn cơ xương</ul>
-                <ul>Phần 24: Rối loạn tâm lý xã hội</ul>
-                <ul>Phần 25: Lạm dụng và tấn công</ul>
-                <ul>Phần 26: Tình huống đặc biệt</ul>
-            </ul>
-        </div>
-        </div>
-    </div>
-    </div>
-  )
-}
+          <div className="h-[2px] bg-gray-100" />
 
-export default SinglePage
+          {/* Pricing */}
+          {(book.isCompleted || book.preorder) && (
+            <div className="flex items-center gap-4">
+              {book.hasColorSale && (
+                <h3 className="text-xl text-gray-500 line-through">
+                  {book.colorPrice.toLocaleString()} VNĐ
+                </h3>
+              )}
+              <h2 className="font-medium text-2xl">
+                {displayPrice.toLocaleString()} VNĐ
+              </h2>
+            </div>
+          )}
+          <div className="h-[2px] bg-gray-100" />
+
+          {/* Preorder Info */}
+          {!book.isCompleted && book.preorder && book.predictDate && (
+            <div className="text-sm text-gray-600">
+              <p>Đặt trước - Dự kiến ra mắt: {format(new Date(book.predictDate), 'dd/MM/yyyy')}</p>
+            </div>
+          )}
+
+          {/* Customize Products */}
+          {(book.isCompleted || book.preorder) && (
+            <CustomizeProducts
+              colorPrice={book.colorPrice}
+              photoPrice={book.photoPrice}
+              hasColorSale={book.hasColorSale}
+              colorSaleAmount={book.colorSaleAmount}
+              onPriceChange={setDisplayPrice}
+            />
+          )}
+          <Add
+            availableCopies={book.availableCopies}
+            isCompleted={book.isCompleted}
+            preorder={book.preorder}
+          />
+
+          <div className="h-[2px] bg-gray-100" />
+          {/* Details */}
+          <div>
+            <h4 className="font-medium mb-4">CHI TIẾT</h4>
+            <p>{book.detail}</p>
+            {book.isbn && <p>ISBN: {book.isbn}</p>}
+            {book.relatedBooks.length > 0 && (
+              <p>
+                Sách liên quan:{' '}
+                {book.relatedBooks.join(', ')}
+              </p>
+            )}
+          </div>
+          <div className="h-[2px] bg-gray-100" />
+          {/* Table of Contents */}
+          {book.content && (
+            <div className="font-semibold">
+              <h4 className="font-medium mb-4">MỤC LỤC</h4>
+              <div
+                className="list-decimal pl-5 space-y-2"
+                dangerouslySetInnerHTML={{ __html: book.content }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SinglePage;
