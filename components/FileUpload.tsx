@@ -10,7 +10,7 @@ import config from "@/lib/config";
 import { Button } from "./ui/button";
 
 interface FileUploadProps {
-  accept: "image" | "pdf";
+  accept: "image" | "image-preview" | "pdf";
   onChange?: (url: string) => void; // Thêm prop onChange
 }
 
@@ -53,7 +53,7 @@ const FileUpload = ({ accept, onChange }: FileUploadProps) => {
     const isImage = file.type.startsWith("image/");
     const isPDF = file.type === "application/pdf";
 
-    if (accept === "image") {
+    if (accept === "image" || accept === "image-preview") {
       if (!isImage) {
         alert("Chỉ upload file ảnh");
         return;
@@ -119,13 +119,11 @@ const FileUpload = ({ accept, onChange }: FileUploadProps) => {
           accept="image/*,application/pdf"
         />
         <div className="flex flex-wrap gap-4 mt-2">
-        <Button onClick={handleUpload} className="rounded-3xl bg-blue-900 text-white">
+        <Button className='bg-blue-900 text-white hover:bg-white hover:text-blue-900' onClick={(e) => { e.preventDefault(); handleUpload(); }}>
+
           Tải file
         </Button>
-        
-        <Button type="button" onClick={handleCancel} disabled={progress === 0} className="rounded-3xl bg-blue-900 text-white">
-          Hủy bỏ
-        </Button>
+
         </div>
         <br />
         {/* <p>Tiến độ: <progress value={progress} max={100} /></p> */}
@@ -134,7 +132,7 @@ const FileUpload = ({ accept, onChange }: FileUploadProps) => {
             <div className="progress" style={{ width: `${progress}%`}}></div>
           </div>
         )}
-        {uploadedFileUrl && fileType === "image" && (
+        {uploadedFileUrl && accept === "image" && (
           <div>
             <h3>Bìa sách xem trước:</h3>
             <Image

@@ -32,28 +32,28 @@ export const bookSchema = z.object({
     title: z.string().trim().min(2, "Tên sách phải có ít nhất 2 ký tự").max(100, "Tên sách không được quá 100 ký tự"),
     author: z.string().trim().min(2, "Tên tác giả phải có ít nhất 2 ký tự").max(100, "Tên tác giả không được quá 100 ký tự"),
     primarySpecialty: z.string().min(1, "Vui lòng chọn chuyên ngành chính"),
-    relatedSpecialties: z.array(z.string()).default([]), // Bỏ optional(), chỉ dùng default
+    relatedSpecialties: z.array(z.string()).default([]),
+    relatedBooks: z.array(z.string()).default([]), // New field for related books
     detail: z.string().trim().min(1, "Chi tiết không được để trống").max(500, "Chi tiết không được quá 500 ký tự"),
-    predictDate: z.string().optional().default(""), // Có thể để trống nếu sách đã hoàn thành
+    predictDate: z.string().optional().default(""),
     preorder: z.boolean().default(false),
-    availableCopies: z.coerce.number().int().nonnegative().default(0), // Cho phép 0, không bắt buộc positive
+    availableCopies: z.coerce.number().nonnegative().default(0),
     isbn: z.string().optional().default(""),
     description: z.string().max(1000, "Mô tả không được quá 1000 ký tự").optional().default(""),
-    coverUrl: z.string().default(""), // Bỏ nonempty(), cho phép để trống ban đầu
+    coverUrl: z.string().default(""),
     coverColor: z.string().default("").refine((val) => {
-        // Cho phép trống hoặc phải đúng format hex color
         return val === "" || /^#[0-9A-F]{6}$/i.test(val);
     }, {
         message: "Màu phải có định dạng hex (ví dụ: #FF0000)"
     }),
-    pdfUrl: z.string().default(""), // Bỏ nonempty(), cho phép để trống ban đầu
+    pdfUrl: z.string().default(""),
     content: z.string().default(""),
-    // Thêm các field mới
     isCompleted: z.boolean().default(true),
     colorPrice: z.coerce.number().nonnegative().default(0),
     photoPrice: z.coerce.number().nonnegative().default(0),
     hasColorSale: z.boolean().default(false),
-    colorSaleAmount: z.coerce.number().nonnegative().default(0), // Bỏ optional, dùng default
+    colorSaleAmount: z.coerce.number().nonnegative().default(0),
+    previewImages: z.array(z.string()).max(6, "Tối đa 6 trang xem trước").default([]), // New field for preview pages
 }).refine((data) => {
     // Validation logic: nếu sách chưa hoàn thành thì predictDate là bắt buộc
     if (!data.isCompleted && (!data.predictDate || data.predictDate.trim() === "")) {
@@ -99,4 +99,10 @@ export const bookSchema = z.object({
 }, {
     message: "Phải nhập ít nhất một loại giá (màu hoặc photo) khi sách đã hoàn thành hoặc cho phép đặt trước",
     path: ["colorPrice"]
+}).refine((data) => {
+    // Validation logic: kiểm tra định dạng URL của previewPages
+    return data.previewImages.every(url => url === "" || /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(url));
+}, {
+    message: "URL trang xem trước không hợp lệ",
+    path: ["previewPages"]
 });

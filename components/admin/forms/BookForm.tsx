@@ -38,7 +38,6 @@ const medicalSpecialties = [
   { value: "nhi-khoa", label: "Nhi khoa" },
   { value: "nhan-khoa", label: "Nhãn khoa" },
   { value: "tai-mui-hong", label: "Tai mũi họng" },
-  { value: "rang-ham-mat", label: "Răng hàm mặt" },
   { value: "da-lieu", label: "Da liễu" },
   { value: "tinh-than", label: "Tâm thần" },
   { value: "than-kinh", label: "Thần kinh" },
@@ -65,6 +64,7 @@ interface Props extends Partial<Book> {
 const BookForm = ({ type, ...book }: Props) => {
   const [primarySpecialtyOpen, setPrimarySpecialtyOpen] = React.useState(false)
   const [relatedSpecialtiesOpen, setRelatedSpecialtiesOpen] = React.useState(false)
+  const [relatedBooksOpen, setRelatedBooksOpen] = React.useState(false)
 
   const form = useForm<z.infer<typeof bookSchema>>({
     resolver: zodResolver(bookSchema),
@@ -73,6 +73,8 @@ const BookForm = ({ type, ...book }: Props) => {
         author: '',
         primarySpecialty: '', // Chuyên ngành chính
         relatedSpecialties: [], // Chuyên ngành liên quan
+        previewImages: [], // Mảng chứa URL các ảnh xem trước
+relatedBooks: [], 
         detail: '', // Chi tiết
         predictDate: '',
         preorder: false,
@@ -96,6 +98,8 @@ const BookForm = ({ type, ...book }: Props) => {
   const preorder = form.watch("preorder")
   const hasColorSale = form.watch("hasColorSale")
   const selectedRelatedSpecialties = form.watch("relatedSpecialties")
+  const previewImages = form.watch("previewImages")
+const selectedRelatedBooks = form.watch("relatedBooks")
 
   // Logic hiển thị các trường giá: chỉ hiển thị khi sách đã hoàn thành HOẶC cho phép đặt trước
   const shouldShowPricing = isCompleted || preorder
@@ -111,6 +115,28 @@ const BookForm = ({ type, ...book }: Props) => {
     const updatedSpecialties = currentSpecialties.filter(specialty => specialty !== specialtyToRemove)
     form.setValue("relatedSpecialties", updatedSpecialties)
   }
+
+  // Hàm thêm ảnh xem trước
+const addPreviewImage = (url: string) => {
+  const currentImages = form.getValues("previewImages")
+  if (currentImages.length < 6) {
+    form.setValue("previewImages", [...currentImages, url])
+  }
+}
+
+// Hàm xóa ảnh xem trước
+const removePreviewImage = (indexToRemove: number) => {
+  const currentImages = form.getValues("previewImages")
+  const updatedImages = currentImages.filter((_, index) => index !== indexToRemove)
+  form.setValue("previewImages", updatedImages)
+}
+
+// Hàm xóa sách liên quan
+const removeRelatedBook = (bookIdToRemove: string) => {
+  const currentBooks = form.getValues("relatedBooks")
+  const updatedBooks = currentBooks.filter(bookId => bookId !== bookIdToRemove)
+  form.setValue("relatedBooks", updatedBooks)
+}
 
   return (
     <Form {...form}>
@@ -540,6 +566,52 @@ const BookForm = ({ type, ...book }: Props) => {
             </FormItem>
           )}
         />
+        {/* Preview Images */}
+<FormField
+  control={form.control}
+  name="previewImages"
+  render={({ field }) => (
+    <FormItem className="flex flex-col gap-1">
+      <FormLabel className='text-base font-normal text-dark-500'>
+        Ảnh xem trước ({previewImages?.length || 0}/6)
+      </FormLabel>
+      <FormControl>
+        <div className="space-y-4">
+          {/* Hiển thị các ảnh đã upload */}
+          {previewImages && previewImages.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {previewImages.map((imageUrl, index) => (
+                <div key={index} className="relative">
+                  <img 
+                    src={imageUrl} 
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-32 object-cover rounded-lg border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePreviewImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Nút thêm ảnh - chỉ hiển thị khi chưa đủ 6 ảnh */}
+          {(!previewImages || previewImages.length < 6) && (
+            <FileUpload
+              accept="image-preview"
+              onChange={addPreviewImage}
+            />
+          )}
+        </div>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
         <FormField
           control={form.control}
           name="coverColor"
@@ -616,6 +688,88 @@ const BookForm = ({ type, ...book }: Props) => {
             </FormItem>
           )}
         />
+        {/* Sách liên quan */}
+<FormField
+  control={form.control}
+  name="relatedBooks"
+  render={({ field }) => (
+    <FormItem className="flex flex-col gap-1">
+      <FormLabel className='text-base font-normal text-dark-500'>
+        Sách liên quan
+      </FormLabel>
+      <FormControl>
+        <div className="space-y-2">
+          <Popover open={relatedBooksOpen} onOpenChange={setRelatedBooksOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={relatedBooksOpen}
+                className="w-full justify-between book-form_input"
+              >
+                Thêm sách liên quan...
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+              <Command>
+                <CommandInput placeholder="Tìm sách..." />
+                <CommandList>
+                  <CommandEmpty>Không tìm thấy sách.</CommandEmpty>
+                  <CommandGroup>
+                    {/* TODO: Thay bằng danh sách sách từ database */}
+                    {/* {availableBooks
+                      .filter(book => !field.value.includes(book.id))
+                      .map((book) => (
+                        <CommandItem
+                          key={book.id}
+                          value={book.id}
+                          onSelect={(currentValue) => {
+                            const updatedBooks = [...field.value, currentValue]
+                            field.onChange(updatedBooks)
+                            setRelatedBooksOpen(false)
+                          }}
+                        >
+                          {book.title} - {book.author}
+                        </CommandItem>
+                      ))} */}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Hiển thị các sách đã chọn */}
+          {selectedRelatedBooks && selectedRelatedBooks.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedRelatedBooks.map((bookId) => {
+                // TODO: Tìm thông tin sách từ availableBooks array
+                // const book = availableBooks.find(b => b.id === bookId)
+                return (
+                  <div
+                    key={bookId}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                  >
+                    {/* {book ? `${book.title} - ${book.author}` : bookId} */}
+                    {bookId} {/* Temporary - thay bằng book title */}
+                    <button
+                      type="button"
+                      onClick={() => removeRelatedBook(bookId)}
+                      className="ml-1 hover:bg-blue-200 rounded-full p-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
         <Button type="submit" className='book-form_btn text-lime-50'>
           Đăng sách lên
         </Button>
