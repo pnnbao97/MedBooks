@@ -15,6 +15,13 @@
       "when": 1747970822185,
       "tag": "0001_greedy_skin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748067251860,
+      "tag": "0002_striped_terrax",
+      "breakpoints": true
     }
   ]
 }

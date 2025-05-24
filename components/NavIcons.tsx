@@ -1,87 +1,63 @@
 "use client";
-import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-// import CartModal from "./CartModal";
-
-import Cookies from "js-cookie";
 import CartModal from './CartModal';
-// import { useCartStore } from "@/hooks/useCartStore";
+import { 
+  SignInButton, 
+  SignUpButton, 
+  SignedIn, 
+  SignedOut, 
+  UserButton,
+  useUser 
+} from "@clerk/nextjs";
 
 const NavIcons = () => {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
+  const { user } = useUser();
   const router = useRouter();
   const pathName = usePathname();
 
-
-  // TEMPORARY
-  const isLoggedIn = false;
-
-const handleProfile = async () => {
-    // if (!isLoggedIn) {
-    //     router.push("/login");
-    // }
-    setIsProfileOpen((prev) => !prev);
-//   const session = await auth();
-//   if (!session?.user?.id) {
-//     router.push('/login');
-//   } else {
-//     setIsProfileOpen((prev) => !prev);
-  }
-
-
-  // AUTH WITH WIX-MANAGED AUTH
-
-  // const wixClient = useWixClient();
-
-  // const login = async () => {
-  //   const loginRequestData = wixClient.auth.generateOAuthData(
-  //     "http://localhost:3000"
-  //   );
-
-  //   console.log(loginRequestData);
-
-  //   localStorage.setItem("oAuthRedirectData", JSON.stringify(loginRequestData));
-  //   const { authUrl } = await wixClient.auth.getAuthUrl(loginRequestData);
-  //   window.location.href = authUrl;
-  // };
-
-  const handleLogout = async () => {
-   
-  };
-
-
-//   const { cart, counter, getCart } = useCartStore();
-
-//   useEffect(() => {
-//     getCart(wixClient);
-//   }, [wixClient, getCart]);
-
   return (
     <div className="flex items-center gap-4 xl:gap-6 relative">
-      <Image
-        src="/profile.png"
-        alt=""
-        width={22}
-        height={22}
-        className="cursor-pointer"
-        // onClick={login}
-        onClick={handleProfile}
-      />
-      {isProfileOpen && (
-        <div className="absolute p-4 rounded-md top-12 left-0 bg-white text-sm shadow-[0_3px_10px_rgb(0,0,0,0.2)] z-20">
-          <Link href="/profile">Profile</Link>
-          <div className="mt-2 cursor-pointer" onClick={handleLogout}>
-            {isLoading ? "Logging out" : "Logout"}
+      {/* Clerk Authentication */}
+      <div className="flex items-center gap-2">
+        <SignedOut>
+          <div className="flex items-center gap-2">
+            <SignInButton mode="modal">
+              <button className="text-blue-200 hover:text-white px-3 py-1 rounded-md hover:bg-blue-800 transition-colors text-sm">
+                Đăng nhập
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors text-sm">
+                Đăng ký
+              </button>
+            </SignUpButton>
           </div>
-        </div>
-      )}
+        </SignedOut>
+        
+        <SignedIn>
+          <div className="flex items-center gap-2">
+            <span className="text-blue-200 text-sm hidden md:block">
+              Xin chào, {user?.firstName || 'Bạn'}!
+            </span>
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "w-8 h-8",
+                  userButtonPopoverCard: "bg-white shadow-lg",
+                  userButtonPopoverActionButton: "hover:bg-gray-100"
+                }
+              }}
+              afterSignOutUrl="/"
+            />
+          </div>
+        </SignedIn>
+      </div>
+
+      {/* Notification */}
       <Image
         src="/notification.png"
         alt=""
@@ -89,13 +65,15 @@ const handleProfile = async () => {
         height={22}
         className="cursor-pointer"
       />
+      
+      {/* Cart */}
       <div
         className="relative cursor-pointer"
         onClick={() => setIsCartOpen((prev) => !prev)}
       >
         <Image src="/cart.png" alt="" width={22} height={22} />
         <div className="absolute -top-4 -right-4 w-6 h-6 bg-[#F35C7A] rounded-full text-white text-sm flex items-center justify-center">
-          {/* {counter} */}2
+          2
         </div>
       </div>
       {isCartOpen && <CartModal />}

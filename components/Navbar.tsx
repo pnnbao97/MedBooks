@@ -83,29 +83,34 @@ const Navbar = () => {
   return (
     <div className="font-semibold bg-blue-950 text-blue-200 h-20 px-4 md:px-8 relative">
       {/* MOBILE */}
-      <div className="h-full flex items-center justify-between md:hidden">
-        <Link href="/">
-          <div className="tracking-wide">MedBooks</div>
-        </Link>
-        <Menu />
+      <div className="h-full flex items-center justify-between sticky md:hidden">
+        <div className="flex items-center justify-between gap-6">
+         <SidebarTrigger className="text-blue-200 hover:text-white p-2 h-10 w-10 flex items-center 
+          justify-center rounded-md hover:bg-blue-800 transition-colors"/>
+          <Link href="/" className="flex items-center">
+            <Image src="/icons/VMedBook-blue.png" alt="" width={150} height={60} />
+           
+          </Link>
+          </div>
+     
       </div>
       {/* BIGGER SCREENS */}
       <div className="hidden md:flex items-center justify-between gap-8 h-full">
         {/* LEFT */}
-        <div className="w-1/3 xl:w-1/2 flex items-center gap-10">
+        <div className="w-1/3 xl:w-1/2 flex items-center gap-6">
           <SidebarTrigger className="text-blue-200 hover:text-white p-2 h-10 w-10 flex items-center 
           justify-center rounded-md hover:bg-blue-800 transition-colors"/>
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/icons/admin/logo.svg" alt="" width={37} height={37} />
-            <div className="tracking-wide">MedBooks</div>
+          <Link href="/" className="flex items-center">
+            <Image src="/icons/VMedBook-blue.png" alt="" width={150} height={60} />
+           
           </Link>
           
           {/* Navigation Menu mới từ shadcn/ui */}
           <div className="hidden xl:block">
-            <NavigationMenu>
-              <NavigationMenuList>
-                <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
+            <NavigationMenu >
+              <NavigationMenuList >
+                <NavigationMenuItem >
+                  <NavigationMenuLink asChild className="bg-blue-950">
                     <Link href="/" className={navigationMenuTriggerStyle()}>
                       Trang chủ
                     </Link>
@@ -113,7 +118,7 @@ const Navbar = () => {
                 </NavigationMenuItem>
 
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger>Danh mục sách</NavigationMenuTrigger>
+                  <NavigationMenuTrigger className="bg-blue-950">Danh mục sách</NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
                       {bookCategories.map((category) => (
@@ -130,7 +135,7 @@ const Navbar = () => {
                 </NavigationMenuItem>
 
                 <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
+                  <NavigationMenuLink asChild className="bg-blue-950">
                     <Link href="/contact" className={navigationMenuTriggerStyle()}>
                       Liên hệ
                     </Link>

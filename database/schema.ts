@@ -7,15 +7,16 @@ export const PAYMENT_METHOD_ENUM = pgEnum('payment_method', ['MOMO', 'ZALOPAY', 
 
 export const users = pgTable("users", {
   id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
+  clerkId: varchar("clerk_id", { length: 255 }).notNull().unique(), // Add clerk_id to store Clerk's user ID
   fullName: varchar("full_name", { length: 255 }).notNull(),
   email: text("email").notNull().unique(),
-  password: text('password').notNull(),
-  status: STATUS_ENUM('status').default('PENDING'),
-  role: ROLE_ENUM('role').default('USER'),
-  lastActivityDate: date('last_activity_date').defaultNow(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  status: STATUS_ENUM("status").default("PENDING"),
+  role: ROLE_ENUM("role").default("USER"),
+  lastActivityDate: date("last_activity_date").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }), // Add for tracking updates
+  isActive: boolean("is_active").notNull().default(true), // Add for soft deletion
 });
-
 export const books = pgTable("books", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   
