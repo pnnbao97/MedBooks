@@ -1,11 +1,9 @@
-// components/Navbar.tsx
-'use client';
+"use client";
 import Link from "next/link";
 import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 import NavIcons from "./NavIcons";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import Menu from "@/components/Menu";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -84,39 +82,35 @@ const Navbar = () => {
     <div className="font-semibold bg-blue-950 text-blue-200 h-20 px-4 md:px-8 relative">
       {/* MOBILE */}
       <div className="h-full flex items-center justify-between sticky md:hidden">
-        <div className="flex items-center justify-between gap-6">
-         <SidebarTrigger className="text-blue-200 hover:text-white p-2 h-10 w-10 flex items-center 
-          justify-center rounded-md hover:bg-blue-800 transition-colors"/>
+        <div className="flex items-center gap-6">
+          <SidebarTrigger className="text-blue-200 hover:text-white p-2 h-10 w-10 flex items-center justify-center rounded-md hover:bg-blue-800 transition-colors"/>
           <Link href="/" className="flex items-center">
             <Image src="/icons/VMedBook-blue.png" alt="" width={150} height={60} />
-           
           </Link>
-          </div>
-     
+        </div>
+        <div className="flex items-center gap-4">
+          <NavIcons />
+        </div>
       </div>
       {/* BIGGER SCREENS */}
       <div className="hidden md:flex items-center justify-between gap-8 h-full">
         {/* LEFT */}
         <div className="w-1/3 xl:w-1/2 flex items-center gap-6">
-          <SidebarTrigger className="text-blue-200 hover:text-white p-2 h-10 w-10 flex items-center 
-          justify-center rounded-md hover:bg-blue-800 transition-colors"/>
+          <SidebarTrigger className="text-blue-200 hover:text-white p-2 h-10 w-10 flex items-center justify-center rounded-md hover:bg-blue-800 transition-colors"/>
           <Link href="/" className="flex items-center">
             <Image src="/icons/VMedBook-blue.png" alt="" width={150} height={60} />
-           
           </Link>
-          
           {/* Navigation Menu mới từ shadcn/ui */}
           <div className="hidden xl:block">
-            <NavigationMenu >
-              <NavigationMenuList >
-                <NavigationMenuItem >
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
                   <NavigationMenuLink asChild className="bg-blue-950">
                     <Link href="/" className={navigationMenuTriggerStyle()}>
                       Trang chủ
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
-
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="bg-blue-950">Danh mục sách</NavigationMenuTrigger>
                   <NavigationMenuContent>
@@ -133,7 +127,6 @@ const Navbar = () => {
                     </ul>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
-
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild className="bg-blue-950">
                     <Link href="/contact" className={navigationMenuTriggerStyle()}>

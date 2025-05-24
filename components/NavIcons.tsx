@@ -20,27 +20,31 @@ const NavIcons = () => {
   const pathName = usePathname();
 
   return (
-    <div className="flex items-center gap-4 xl:gap-6 relative">
+    <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 relative">
       {/* Clerk Authentication */}
       <div className="flex items-center gap-2">
         <SignedOut>
-          <div className="flex items-center gap-2">
-            <SignInButton mode="modal">
-              <button className="text-blue-200 hover:text-white px-3 py-1 rounded-md hover:bg-blue-800 transition-colors text-sm">
-                Đăng nhập
-              </button>
-            </SignInButton>
-            <SignUpButton mode="modal">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors text-sm">
-                Đăng ký
-              </button>
-            </SignUpButton>
-          </div>
+ <SignInButton mode="modal">
+    <button className="text-blue-200 hover:text-white px-3 py-1 rounded-md transition-colors text-sm flex items-center gap-2">
+      {/* Show icon for md and below */}
+      <span className="block lg:hidden">
+        <Image
+          src="/profile.png"
+          alt="User"
+          width={22}
+          height={22}
+          className="cursor-pointer"
+        />
+      </span>
+      {/* Show text for md and above */}
+      <span className="hidden lg:block">Đăng nhập</span>
+    </button>
+  </SignInButton>
         </SignedOut>
         
         <SignedIn>
           <div className="flex items-center gap-2">
-            <span className="text-blue-200 text-sm hidden md:block">
+            <span className="text-blue-200 text-sm hidden lg:block">
               Xin chào, {user?.firstName || 'Bạn'}!
             </span>
             <UserButton 
