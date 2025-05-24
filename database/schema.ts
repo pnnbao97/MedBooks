@@ -1,22 +1,56 @@
-import { integer, varchar, text, timestamp, pgTable, uuid, pgEnum, date, boolean } from "drizzle-orm/pg-core";
+// schema.ts - Updated schema with user profiles
+import { integer, varchar, text, timestamp, pgTable, uuid, pgEnum, date, boolean, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const STATUS_ENUM = pgEnum('status', ['PENDING', 'APPROVED', 'REJECTED']);
 export const ROLE_ENUM = pgEnum('role', ['USER', 'ADMIN']);
 export const ORDER_STATUS_ENUM = pgEnum('order_status', ['PENDING', 'COMPLETED', 'FAILED', 'CANCELLED']);
 export const PAYMENT_METHOD_ENUM = pgEnum('payment_method', ['MOMO', 'ZALOPAY', 'VNPAY', 'PAYPAL']);
+export const GENDER_ENUM = pgEnum('gender', ['MALE', 'FEMALE', 'OTHER']);
 
 export const users = pgTable("users", {
   id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
-  clerkId: varchar("clerk_id", { length: 255 }).notNull().unique(), // Add clerk_id to store Clerk's user ID
+  clerkId: varchar("clerk_id", { length: 255 }).notNull().unique(),
   fullName: varchar("full_name", { length: 255 }).notNull(),
   email: text("email").notNull().unique(),
+  phone: varchar("phone", { length: 20 }),
+  address: text("address"),
   status: STATUS_ENUM("status").default("PENDING"),
   role: ROLE_ENUM("role").default("USER"),
   lastActivityDate: date("last_activity_date").defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }), // Add for tracking updates
-  isActive: boolean("is_active").notNull().default(true), // Add for soft deletion
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  isActive: boolean("is_active").notNull().default(true),
 });
+
+export const userProfiles = pgTable("user_profiles", {
+  id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  bio: text("bio"),
+  avatarUrl: text("avatar_url"),
+  birthDate: date("birth_date"),
+  gender: GENDER_ENUM("gender"),
+  occupation: varchar("occupation", { length: 255 }),
+  preferences: jsonb("preferences"), // Store JSON preferences
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Relations
+export const usersRelations = relations(users, ({ one }) => ({
+  profile: one(userProfiles, {
+    fields: [users.id],
+    references: [userProfiles.userId],
+  }),
+}));
+
+export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [userProfiles.userId],
+    references: [users.id],
+  }),
+}));
+
 export const books = pgTable("books", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   
