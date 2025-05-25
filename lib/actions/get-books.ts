@@ -16,7 +16,7 @@ export async function getBooks(): Promise<Book[]> {
         primarySpecialty: books.primarySpecialty,
         detail: books.detail,
         description: books.description,
-        previewImages: books.previewImages, // Lấy mảng previewImages thay vì coverUrl
+        previewImages: books.previewImages,
         colorPrice: books.colorPrice,
         photoPrice: books.photoPrice,
         hasColorSale: books.hasColorSale,
@@ -31,7 +31,7 @@ export async function getBooks(): Promise<Book[]> {
         eq(books.preorder, true)     // Sách cho phép preorder
       ))
       .orderBy(desc(books.createdAt))
-      .limit(20); // Giới hạn 20 sách mới nhất
+      .limit(6); 
 
     // Xử lý để lấy phần tử đầu tiên của previewImages làm coverUrl
     return result.map(book => ({

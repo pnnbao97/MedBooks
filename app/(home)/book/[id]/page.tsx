@@ -1,20 +1,8 @@
-'use client';
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Add from '@/components/Add';
-import CustomizeProducts from '@/components/CustomizeProducts';
-import ProductImages from '@/components/ProductImages';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { useParams } from 'next/navigation';
+// page.tsx - Server Component for SEO
+import React from 'react';
+import { Metadata } from 'next';
 import { getBookById } from '@/lib/admin/actions/book';
-import { format } from 'date-fns';
+import BookDetailClient from '@/components/BookDetailClient';
 
 // Medical specialties mapping
 const medicalSpecialties = [
@@ -48,191 +36,129 @@ const getSpecialtyLabel = (value: string) => {
   return specialty ? specialty.label : value;
 };
 
-const SinglePage = () => {
-  const { id, slug, home } = useParams();
-  const [book, setBook] = useState<Book | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [displayPrice, setDisplayPrice] = useState<number>(0);
+// Generate metadata dynamically - Server Component only
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  try {
+    const response = await getBookById(Number(params.id));
+    if (!response.success || !response.data) {
+      return {
+        title: 'Không tìm thấy sách | VMedBook',
+        description: 'Sách y khoa không tồn tại hoặc đã bị xóa.',
+      };
+    }
 
-  useEffect(() => {
-    const fetchBook = async () => {
-      const bookId = id || slug;
-      if (bookId) {
-        try {
-          setLoading(true);
-          setError(null);
-          const response = await getBookById(Number(bookId));
-          if (response.success && response.data) {
-            setBook(response.data);
-            setDisplayPrice(
-              response.data.hasColorSale
-                ? response.data.colorPrice - response.data.colorSaleAmount
-                : response.data.colorPrice
-            );
-          } else {
-            setBook(null);
-            setError(response.message || 'Không tìm thấy sách');
-          }
-        } catch (error) {
-          console.error('Error fetching book:', error);
-          setError('Lỗi khi tải dữ liệu sách');
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-        setError('Không có ID sách');
-      }
+    const book = response.data;
+    const displayPrice = book.hasColorSale 
+      ? book.colorPrice - book.colorSaleAmount 
+      : book.colorPrice;
+
+    const metaDescription = book.description.length > 160 
+      ? `${book.description.substring(0, 157)}...`
+      : book.description;
+
+    return {
+      title: `${book.title} - ${book.author} | Sách Y Khoa VMedBook`,
+      description: metaDescription,
+      keywords: [
+        book.title,
+        book.author,
+        getSpecialtyLabel(book.primarySpecialty),
+        'sách y khoa',
+        'dịch thuật y khoa',
+        'y học',
+        'VMedBook',
+        ...book.relatedSpecialties.map(getSpecialtyLabel)
+      ].join(', '),
+      authors: [{ name: book.author }],
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-video-preview': -1,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
+      },
+      openGraph: {
+        type: 'website',
+        siteName: 'VMedBook - Chuyên Trang Dịch Thuật Ngành Y Lớn Nhất Việt Nam',
+        title: `${book.title} - ${book.author}`,
+        description: metaDescription,
+        url: `https://www.vmedbook.com/books/${book.id}`,
+        images: [
+          {
+            url: book.previewImages[0] || '/default-book-cover.jpg',
+            width: 800,
+            height: 600,
+            alt: `Bìa sách ${book.title} - ${book.author}`,
+          },
+        ],
+        locale: 'vi_VN',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${book.title} - ${book.author}`,
+        description: metaDescription,
+        images: [book.previewImages[0] || '/default-book-cover.jpg'],
+      },
+      alternates: {
+        canonical: `https://www.vmedbook.com/books/${book.id}`,
+      },
+      other: {
+        'product:price:amount': displayPrice.toString(),
+        'product:price:currency': 'VND',
+        'product:availability': book.availableCopies > 0 ? 'in stock' : 'out of stock',
+      },
     };
-
-    fetchBook();
-  }, [id, slug]);
-
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <p>Đang tải...</p>
-        <p className="text-sm text-gray-500 mt-2">ID: {id || slug}</p>
-      </div>
-    );
+  } catch (error) {
+    console.error('Error generating metadata:', error);
+    return {
+      title: 'Lỗi | VMedBook',
+      description: 'Đã xảy ra lỗi khi tải thông tin sách.',
+    };
   }
+}
 
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-500">{error}</p>
-        <p className="text-sm text-gray-500 mt-2">Params: {JSON.stringify({ id, slug, home })}</p>
-      </div>
-    );
-  }
-
-  if (!book) {
-    return (
-      <div className="text-center py-8">
-        <p>Không tìm thấy sách.</p>
-        <p className="text-sm text-gray-500 mt-2">ID: {id || slug}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col px-4 py-8 md:px-8 lg:px-16 xl:px-32 2xl:px-64">
-      {/* BREADCRUMB */}
-      <div className="mb-4">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/">Tất cả</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href={`/books/${book.primarySpecialty}`}>
-                {getSpecialtyLabel(book.primarySpecialty)}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{book.title}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-      <div className="relative flex flex-col lg:flex-row gap-16">
-        {/* IMG */}
-        <div className="w-full lg:w-1/2 top-20 h-max">
-          <ProductImages previewImages={book.previewImages} pdfUrl={book.pdfUrl} />
+// Server Component - handles initial data fetching
+const SinglePage = async ({ params }: { params: { id: string } }) => {
+  try {
+    const response = await getBookById(Number(params.id));
+    
+    if (!response.success || !response.data) {
+      return (
+        <div className="text-center py-8">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Lỗi</h1>
+          <p className="text-red-500">{response.message || 'Không tìm thấy sách'}</p>
+          <a 
+            href="/" 
+            className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Về trang chủ
+          </a>
         </div>
-        {/* TEXT */}
-        <div className="w-full lg:w-1/2 flex flex-col gap-6">
-          <h1 className="text-4xl font-medium capitalize text-blue-900">{book.title}</h1>
-          <h2 className="text-xl font-semibold text-blue-700">Tác giả: {book.author}</h2>
-          <p className="font-sans text-justify text-gray-800">{book.description}</p>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/books/${book.primarySpecialty}`}
-              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
-            >
-              {getSpecialtyLabel(book.primarySpecialty)}
-            </Link>
-            {book.relatedSpecialties.map((specialty) => (
-              <Link
-                key={specialty}
-                href={`/books/${specialty}`}
-                className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
-              >
-                {getSpecialtyLabel(specialty)}
-              </Link>
-            ))}
-          </div>
-          <div className="h-[2px] bg-gray-100" />
+      );
+    }
 
-          {/* Pricing */}
-          {(book.isCompleted || book.preorder) && (
-            <div className="flex items-center gap-4">
-              {book.hasColorSale && (
-                <h3 className="text-xl text-gray-500 line-through">
-                  {book.colorPrice.toLocaleString()} VNĐ
-                </h3>
-              )}
-              <h2 className="font-medium text-2xl">
-                {displayPrice.toLocaleString()} VNĐ
-              </h2>
-            </div>
-          )}
-          <div className="h-[2px] bg-gray-100" />
+    const book = response.data;
 
-          {/* Preorder Info */}
-          {!book.isCompleted && book.preorder && book.predictDate && (
-            <div className="text-sm text-gray-600">
-              <p>Đặt trước - Dự kiến ra mắt: {format(new Date(book.predictDate), 'dd/MM/yyyy')}</p>
-            </div>
-          )}
-
-          {/* Customize Products */}
-          {(book.isCompleted || book.preorder) && (
-            <CustomizeProducts
-              colorPrice={book.colorPrice}
-              photoPrice={book.photoPrice}
-              hasColorSale={book.hasColorSale}
-              colorSaleAmount={book.colorSaleAmount}
-              onPriceChange={setDisplayPrice}
-            />
-          )}
-          <Add
-            availableCopies={book.availableCopies}
-            isCompleted={book.isCompleted}
-            preorder={book.preorder}
-          />
-
-          <div className="h-[2px] bg-gray-100" />
-          {/* Details */}
-          <div>
-            <h4 className="font-medium mb-4">CHI TIẾT</h4>
-            <p>{book.detail}</p>
-            {book.isbn && <p>ISBN: {book.isbn}</p>}
-            {book.relatedBooks.length > 0 && (
-              <p>
-                Sách liên quan:{' '}
-                {book.relatedBooks.join(', ')}
-              </p>
-            )}
-          </div>
-          <div className="h-[2px] bg-gray-100" />
-          {/* Table of Contents */}
-          {book.content && (
-            <div className="font-semibold">
-              <h4 className="font-medium mb-4">MỤC LỤC</h4>
-              <div
-                className="list-decimal pl-5 space-y-2"
-                dangerouslySetInnerHTML={{ __html: book.content }}
-              />
-            </div>
-          )}
-        </div>
+    return <BookDetailClient initialBook={book} medicalSpecialties={medicalSpecialties} />;
+  } catch (error) {
+    console.error('Error fetching book:', error);
+    return (
+      <div className="text-center py-8">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Lỗi</h1>
+        <p className="text-red-500">Đã xảy ra lỗi khi tải dữ liệu sách</p>
+        <a 
+          href="/" 
+          className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Về trang chủ
+        </a>
       </div>
-    </div>
-  );
+    );
+  }
 };
 
 export default SinglePage;
