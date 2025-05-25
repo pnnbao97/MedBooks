@@ -2,6 +2,7 @@
 // Define the Book type based on the schema
 interface Book {
   id: number;
+  slug: string;
   title: string;
   author: string;
   primarySpecialty: string;

@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Session } from 'next-auth';
 
 
-const Sidebar = ({session} : {session : Session}) => {
+const Sidebar = () => {
     const pathname = usePathname();
 
   return (
@@ -49,17 +49,17 @@ const Sidebar = ({session} : {session : Session}) => {
             </div>
         </div>
         <div className='user'>
-            <Avatar>
+            {/* <Avatar>
                 <AvatarFallback className='bg-amber-100'>
                     {getInitials(session?.user?.name || "IN")}
      
                 </AvatarFallback>
-            </Avatar>
-
+            </Avatar> */}
+{/* 
             <div className='flex flex-col max-md:hidden'>
                 <p className='font-semibold text-dark-200'>{session?.user?.name}</p>
                 <p className='text-xs text-dark-500'>{session?.user?.email}</p>
-            </div>
+            </div> */}
         </div>
     </div>
 

@@ -31,6 +31,7 @@ export const signInSchema = z.object({
 export const bookSchema = z.object({
     title: z.string().trim().min(2, "Tên sách phải có ít nhất 2 ký tự").max(100, "Tên sách không được quá 100 ký tự"),
     author: z.string().trim().min(2, "Tên tác giả phải có ít nhất 2 ký tự").max(100, "Tên tác giả không được quá 100 ký tự"),
+    slug: z.string().trim().min(2).max(30),
     primarySpecialty: z.string().min(1, "Vui lòng chọn chuyên ngành chính"),
     relatedSpecialties: z.array(z.string()).default([]),
     relatedBooks: z.array(z.string()).default([]), // New field for related books

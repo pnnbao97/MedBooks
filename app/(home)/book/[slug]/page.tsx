@@ -1,7 +1,7 @@
 // page.tsx - Server Component for SEO
 import React from 'react';
 import { Metadata } from 'next';
-import { getBookById } from '@/lib/admin/actions/book';
+import { getBookBySlug } from '@/lib/actions/get-books'; // Thay getBookById bằng getBookBySlug
 import BookDetailClient from '@/components/BookDetailClient';
 
 // Medical specialties mapping
@@ -36,10 +36,20 @@ const getSpecialtyLabel = (value: string) => {
   return specialty ? specialty.label : value;
 };
 
+// Hàm tạo slug từ tiêu đề sách
+const createSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+};
+
 // Generate metadata dynamically - Server Component only
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   try {
-    const response = await getBookById(Number(params.id));
+    const response = await getBookBySlug(params.slug);
     if (!response.success || !response.data) {
       return {
         title: 'Không tìm thấy sách | VMedBook',
@@ -86,7 +96,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         siteName: 'VMedBook - Chuyên Trang Dịch Thuật Ngành Y Lớn Nhất Việt Nam',
         title: `${book.title} - ${book.author}`,
         description: metaDescription,
-        url: `https://www.vmedbook.com/books/${book.id}`,
+        url: `https://www.vmedbook.com/books/${book.slug}`,
         images: [
           {
             url: book.previewImages[0] || '/default-book-cover.jpg',
@@ -104,7 +114,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
         images: [book.previewImages[0] || '/default-book-cover.jpg'],
       },
       alternates: {
-        canonical: `https://www.vmedbook.com/books/${book.id}`,
+        canonical: `https://www.vmedbook.com/books/${book.slug}`,
       },
       other: {
         'product:price:amount': displayPrice.toString(),
@@ -122,9 +132,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 // Server Component - handles initial data fetching
-const SinglePage = async ({ params }: { params: { id: string } }) => {
+const SinglePage = async ({ params }: { params: { slug: string } }) => {
   try {
-    const response = await getBookById(Number(params.id));
+    const response = await getBookBySlug(params.slug);
     
     if (!response.success || !response.data) {
       return (

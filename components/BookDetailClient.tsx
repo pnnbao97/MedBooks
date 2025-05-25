@@ -1,4 +1,3 @@
-// BookDetailClient.tsx - Client Component
 'use client';
 import React, { useState, Suspense, lazy } from 'react';
 import Link from 'next/link';
@@ -34,6 +33,7 @@ interface MedicalSpecialty {
 interface Book {
   id: number;
   title: string;
+  slug: string;
   author: string;
   description: string;
   detail: string;
@@ -41,7 +41,7 @@ interface Book {
   isbn?: string;
   primarySpecialty: string;
   relatedSpecialties: string[];
-  relatedBooks: string[];
+  relatedBooks: { id: number; title: string; slug: string }[];
   previewImages: string[];
   pdfUrl?: string;
   colorPrice: number;
@@ -67,14 +67,14 @@ const getSpecialtyLabel = (value: string, medicalSpecialties: MedicalSpecialty[]
 
 // JSON-LD Component
 const StructuredData = ({ book, medicalSpecialties }: { book: Book; medicalSpecialties: MedicalSpecialty[] }) => {
-  const displayPrice = book.hasColorSale 
+  const displayPrice = (book.hasColorSale 
     ? book.colorPrice - book.colorSaleAmount 
-    : book.colorPrice;
+    : book.colorPrice) * 1000; // Multiply by 1000
 
   const bookStructuredData = {
     "@context": "https://schema.org/",
     "@type": "Book",
-    "@id": `https://www.vmedbook.com/books/${book.id}`,
+    "@id": `https://www.vmedbook.com/books/${book.slug}`,
     "name": book.title,
     "author": {
       "@type": "Person",
@@ -83,7 +83,7 @@ const StructuredData = ({ book, medicalSpecialties }: { book: Book; medicalSpeci
     "description": book.description,
     "isbn": book.isbn,
     "image": book.previewImages,
-    "url": `https://www.vmedbook.com/books/${book.id}`,
+    "url": `https://www.vmedbook.com/books/${book.slug}`,
     "publisher": {
       "@type": "Organization",
       "name": "VmedBook",
@@ -127,7 +127,7 @@ const StructuredData = ({ book, medicalSpecialties }: { book: Book; medicalSpeci
         "@type": "ListItem",
         "position": 3,
         "name": book.title,
-        "item": `https://www.vmedbook.com/books/${book.id}`
+        "item": `https://www.vmedbook.com/books/${book.slug}`
       }
     ]
   };
@@ -173,10 +173,16 @@ const StructuredData = ({ book, medicalSpecialties }: { book: Book; medicalSpeci
 
 const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientProps) => {
   const [displayPrice, setDisplayPrice] = useState<number>(
-    initialBook.hasColorSale
+    (initialBook.hasColorSale
       ? initialBook.colorPrice - initialBook.colorSaleAmount
-      : initialBook.colorPrice
+      : initialBook.colorPrice) * 1000 // Multiply by 1000
   );
+
+  // Tối ưu hóa mô tả với từ khóa
+  const optimizedDescription = `${initialBook.description} Đây là sách y khoa chuyên về ${getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}, phù hợp cho sinh viên, bác sĩ và chuyên gia y tế.`;
+
+  // Tối ưu hóa chi tiết với từ khóa
+  const optimizedDetail = `${initialBook.detail} Cuốn sách này cung cấp kiến thức chuyên sâu về ${getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}, hỗ trợ học tập và nghiên cứu y khoa.`;
 
   return (
     <>
@@ -224,7 +230,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                 className="text-4xl font-medium capitalize text-blue-900"
                 itemProp="name"
               >
-                {initialBook.title}
+                {initialBook.title} - Sách Y Khoa {getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}
               </h1>
               <h2 
                 className="text-xl font-semibold text-blue-700"
@@ -238,7 +244,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
               className="font-sans text-justify text-gray-800"
               itemProp="description"
             >
-              {initialBook.description}
+              {optimizedDescription}
             </p>
 
             <div className="flex flex-wrap gap-2" role="list" aria-label="Chuyên khoa">
@@ -272,16 +278,16 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                 
                 {initialBook.hasColorSale && (
                   <span className="text-xl text-gray-500 line-through" aria-label="Giá gốc">
-                    {initialBook.colorPrice.toLocaleString()} VNĐ
+                    {(initialBook.colorPrice * 1000).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
                   </span>
                 )}
                 <span 
                   className="font-medium text-2xl" 
                   aria-label="Giá hiện tại"
                   itemProp="price"
-                  content={displayPrice.toString()}
+                  content={(displayPrice).toString()}
                 >
-                  {displayPrice.toLocaleString()} VNĐ
+                  {(displayPrice).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
                 </span>
               </div>
             )}
@@ -311,7 +317,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                   photoPrice={initialBook.photoPrice}
                   hasColorSale={initialBook.hasColorSale}
                   colorSaleAmount={initialBook.colorSaleAmount}
-                  onPriceChange={setDisplayPrice}
+                  onPriceChange={(price) => setDisplayPrice(price * 1000)} // Multiply by 1000
                 />
               </Suspense>
             )}
@@ -329,9 +335,9 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
 
             {/* DETAILS */}
             <section>
-              <h3 className="font-medium mb-4">CHI TIẾT</h3>
+              <h3 className="font-medium mb-4">Chi Tiết Sách Y Khoa {initialBook.title}</h3>
               <div className="space-y-2 text-sm">
-                <p>{initialBook.detail}</p>
+                <p>{optimizedDetail}</p>
                 {initialBook.isbn && (
                   <p>
                     <strong>ISBN:</strong> 
@@ -340,7 +346,18 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                 )}
                 {initialBook.relatedBooks.length > 0 && (
                   <p>
-                    <strong>Sách liên quan:</strong> {initialBook.relatedBooks.join(', ')}
+                    <strong>Sách liên quan:</strong>{' '}
+                    {initialBook.relatedBooks.map((relatedBook, index) => (
+                      <span key={relatedBook.id}>
+                        <Link
+                          href={`/books/${relatedBook.slug}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {relatedBook.title}
+                        </Link>
+                        {index < initialBook.relatedBooks.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
                   </p>
                 )}
               </div>
@@ -351,7 +368,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
             {/* TABLE OF CONTENTS */}
             {initialBook.content && (
               <section>
-                <h3 className="font-medium mb-4">MỤC LỤC</h3>
+                <h3 className="font-medium mb-4">Mục Lục Sách {initialBook.title}</h3>
                 <div
                   className="list-decimal pl-5 space-y-2 text-sm"
                   dangerouslySetInnerHTML={{ __html: initialBook.content }}

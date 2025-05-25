@@ -11,6 +11,7 @@ export async function getBooks(): Promise<Book[]> {
     const result = await db
       .select({
         id: books.id,
+        slug: books.slug,
         title: books.title,
         author: books.author,
         primarySpecialty: books.primarySpecialty,
@@ -53,6 +54,7 @@ export async function getBooksByCategory(category: string): Promise<Book[]> {
     const result = await db
       .select({
         id: books.id,
+        slug: books.slug,
         title: books.title,
         author: books.author,
         primarySpecialty: books.primarySpecialty,
@@ -77,5 +79,60 @@ export async function getBooksByCategory(category: string): Promise<Book[]> {
   } catch (error) {
     console.error('Error fetching books by category:', error);
     return [];
+  }
+}
+
+// Server action để lấy sách theo slug
+export async function getBookBySlug(slug: string): Promise<{ success: boolean; data?: Book; message?: string }> {
+  try {
+    const result = await db
+      .select({
+        id: books.id,
+        title: books.title,
+        slug: books.slug,
+        author: books.author,
+        primarySpecialty: books.primarySpecialty,
+        detail: books.detail,
+        description: books.description,
+        previewImages: books.previewImages,
+        coverUrl: books.coverUrl,
+        colorPrice: books.colorPrice,
+        photoPrice: books.photoPrice,
+        hasColorSale: books.hasColorSale,
+        colorSaleAmount: books.colorSaleAmount,
+        availableCopies: books.availableCopies,
+        preorder: books.preorder,
+        isCompleted: books.isCompleted,
+        createdAt: books.createdAt,
+        pdfUrl: books.pdfUrl,
+        isbn: books.isbn,
+        relatedSpecialties: books.relatedSpecialties,
+        relatedBooks: books.relatedBooks,
+        content: books.content,
+      })
+      .from(books)
+      .where(eq(books.slug, slug))
+      .limit(1);
+
+    if (result.length === 0) {
+      return { success: false, message: 'Không tìm thấy sách' };
+    }
+
+    const book = result[0];
+    return {
+      success: true,
+      data: {
+        ...book,
+        coverUrl: book.previewImages && book.previewImages.length > 0 
+          ? book.previewImages[0] 
+          : '', // Nếu không có previewImages thì để trống
+        previewImages: book.previewImages || [],
+        relatedSpecialties: book.relatedSpecialties || [],
+        relatedBooks: book.relatedBooks || [],
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching book by slug:', error);
+    return { success: false, message: 'Lỗi khi lấy dữ liệu sách' };
   }
 }

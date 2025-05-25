@@ -56,6 +56,7 @@ export const books = pgTable("books", {
   
   // Thông tin cơ bản
   title: varchar("title", { length: 100 }).notNull(), // Giảm từ 255 xuống 100 theo schema
+  slug: varchar('slug', { length: 255 }).notNull().unique(), 
   author: varchar("author", { length: 100 }).notNull(), // Giảm từ 255 xuống 100 theo schema
   primarySpecialty: varchar("primary_specialty", { length: 100 }).notNull(), // Thay đổi từ category
   relatedSpecialties: text("related_specialties").array().default([]), // Mảng chuyên ngành liên quan

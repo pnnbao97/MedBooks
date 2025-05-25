@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { bookSchema } from '@/lib/validations'
-import { FIELD_NAMES } from '@/constants'
+
 import { Textarea } from '@/components/ui/textarea'
 import FileUpload from '@/components/FileUpload'
 import ColorPicker from '../ColorPicker'
@@ -72,6 +72,7 @@ const BookForm = ({ type, ...book }: Props) => {
     resolver: zodResolver(bookSchema),
     defaultValues: {
         title: '',
+        slug: '',
         author: '',
         primarySpecialty: '', // Chuyên ngành chính
         relatedSpecialties: [], // Chuyên ngành liên quan
@@ -160,6 +161,26 @@ const removeRelatedBook = (bookIdToRemove: string) => {
                 <Input
                   required
                   placeholder='Tên sách'
+                  {...field}
+                  className='book-form_input'
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="slug"
+          render={({ field }) => (
+            <FormItem className="flex flex-col gap-1">
+              <FormLabel className='text-base font-normal text-dark-500'>
+                Slug sách (tối ưu SEO)
+              </FormLabel>
+              <FormControl>
+                <Input
+                  required
+                  placeholder='slug'
                   {...field}
                   className='book-form_input'
                 />
