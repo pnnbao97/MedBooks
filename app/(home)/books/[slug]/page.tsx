@@ -37,9 +37,12 @@ const getSpecialtyLabel = (value: string) => {
 };
 
 // Generate metadata dynamically - Server Component only
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   try {
-    const response = await getBookBySlug(params.slug);
+    // Await params before accessing its properties
+    const resolvedParams = await params;
+    const response = await getBookBySlug(resolvedParams.slug);
+    
     if (!response.success || !response.data) {
       return {
         title: 'Không tìm thấy sách',
@@ -133,6 +136,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         'article:published_time': book.createdAt || new Date().toISOString(),
         'og:price:amount': displayPrice.toString(),
         'og:price:currency': 'VND',
+        // Messenger specific tags
+        'og:image:secure_url': book.previewImages[0] || '/default-book-cover.jpg',
+        'og:image:type': 'image/jpeg',
+        'fb:app_id': 'YOUR_FACEBOOK_APP_ID', // Thêm Facebook App ID
       },
     };
   } catch (error) {
@@ -224,9 +231,11 @@ const generateBreadcrumbData = (book: any) => {
 };
 
 // Server Component
-const SinglePage = async ({ params }: { params: { slug: string } }) => {
+const SinglePage = async ({ params }: { params: Promise<{ slug: string }> }) => {
   try {
-    const response = await getBookBySlug(params.slug);
+    // Await params before accessing its properties
+    const resolvedParams = await params;
+    const response = await getBookBySlug(resolvedParams.slug);
     
     if (!response.success || !response.data) {
       return (
