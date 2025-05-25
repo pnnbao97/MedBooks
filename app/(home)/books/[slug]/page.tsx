@@ -1,7 +1,7 @@
-// page.tsx - Server Component for SEO
+// page.tsx - Server Component for SEO (Optimized)
 import React from 'react';
 import { Metadata } from 'next';
-import { getBookBySlug } from '@/lib/actions/get-books'; // Thay getBookById bằng getBookBySlug
+import { getBookBySlug } from '@/lib/actions/get-books';
 import BookDetailClient from '@/components/BookDetailClient';
 
 // Medical specialties mapping
@@ -36,24 +36,15 @@ const getSpecialtyLabel = (value: string) => {
   return specialty ? specialty.label : value;
 };
 
-// Hàm tạo slug từ tiêu đề sách
-const createSlug = (title: string) => {
-  return title
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-};
-
 // Generate metadata dynamically - Server Component only
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   try {
     const response = await getBookBySlug(params.slug);
     if (!response.success || !response.data) {
       return {
-        title: 'Không tìm thấy sách | VMedBook',
+        title: 'Không tìm thấy sách',
         description: 'Sách y khoa không tồn tại hoặc đã bị xóa.',
+        robots: { index: false, follow: false }
       };
     }
 
@@ -62,12 +53,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       ? book.colorPrice - book.colorSaleAmount 
       : book.colorPrice;
 
-    const metaDescription = book.description.length > 160 
-      ? `${book.description.substring(0, 157)}...`
+    // Tối ưu meta description (150-160 ký tự)
+    const metaDescription = book.description.length > 155 
+      ? `${book.description.substring(0, 152)}...`
       : book.description;
 
+    // Title ngắn gọn hơn để tránh bị cắt trên SERP
+    const pageTitle = `${book.title} - ${book.author}`;
+
     return {
-      title: `${book.title} - ${book.author} | Sách Y Khoa VMedBook`,
+      title: pageTitle,
       description: metaDescription,
       keywords: [
         book.title,
@@ -76,10 +71,15 @@ export async function generateMetadata({ params }: { params: { slug: string } })
         'sách y khoa',
         'dịch thuật y khoa',
         'y học',
+        'bác sĩ',
+        'sinh viên y',
         'VMedBook',
         ...book.relatedSpecialties.map(getSpecialtyLabel)
       ].join(', '),
+      
       authors: [{ name: book.author }],
+      category: 'Medical Books',
+      
       robots: {
         index: true,
         follow: true,
@@ -91,47 +91,139 @@ export async function generateMetadata({ params }: { params: { slug: string } })
           'max-snippet': -1,
         },
       },
+
       openGraph: {
         type: 'website',
-        siteName: 'VMedBook - Chuyên Trang Dịch Thuật Ngành Y Lớn Nhất Việt Nam',
-        title: `${book.title} - ${book.author}`,
+        siteName: 'VMedBook',
+        title: pageTitle,
         description: metaDescription,
         url: `https://www.vmedbook.com/books/${book.slug}`,
         images: [
           {
             url: book.previewImages[0] || '/default-book-cover.jpg',
-            width: 800,
-            height: 600,
-            alt: `Bìa sách ${book.title} - ${book.author}`,
+            width: 1200,
+            height: 630,
+            alt: `Bìa sách ${book.title} của ${book.author}`,
           },
         ],
         locale: 'vi_VN',
       },
+
       twitter: {
         card: 'summary_large_image',
-        title: `${book.title} - ${book.author}`,
+        site: '@VMedBook',
+        creator: '@VMedBook',
+        title: pageTitle,
         description: metaDescription,
         images: [book.previewImages[0] || '/default-book-cover.jpg'],
       },
+
       alternates: {
         canonical: `https://www.vmedbook.com/books/${book.slug}`,
       },
+
+      // Thêm các meta tags cho sản phẩm
       other: {
         'product:price:amount': displayPrice.toString(),
         'product:price:currency': 'VND',
         'product:availability': book.availableCopies > 0 ? 'in stock' : 'out of stock',
+        'product:brand': 'VMedBook',
+        'product:category': getSpecialtyLabel(book.primarySpecialty),
+        'article:author': book.author,
+        'article:published_time': book.createdAt || new Date().toISOString(),
+        'og:price:amount': displayPrice.toString(),
+        'og:price:currency': 'VND',
       },
     };
   } catch (error) {
     console.error('Error generating metadata:', error);
     return {
-      title: 'Lỗi | VMedBook',
+      title: 'Lỗi tải trang',
       description: 'Đã xảy ra lỗi khi tải thông tin sách.',
+      robots: { index: false, follow: false }
     };
   }
 }
 
-// Server Component - handles initial data fetching
+// Tạo structured data JSON-LD
+const generateStructuredData = (book: any) => {
+  const displayPrice = book.hasColorSale 
+    ? book.colorPrice - book.colorSaleAmount 
+    : book.colorPrice;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Book',
+    name: book.title,
+    author: {
+      '@type': 'Person',
+      name: book.author
+    },
+    description: book.description,
+    image: book.previewImages[0] || '/default-book-cover.jpg',
+    url: `https://www.vmedbook.com/books/${book.slug}`,
+    publisher: {
+      '@type': 'Organization',
+      name: 'VMedBook'
+    },
+    genre: getSpecialtyLabel(book.primarySpecialty),
+    inLanguage: 'vi',
+    offers: {
+      '@type': 'Offer',
+      price: displayPrice,
+      priceCurrency: 'VND',
+      availability: book.availableCopies > 0 
+        ? 'https://schema.org/InStock' 
+        : 'https://schema.org/OutOfStock',
+      seller: {
+        '@type': 'Organization',
+        name: 'VMedBook'
+      }
+    },
+    aggregateRating: book.rating ? {
+      '@type': 'AggregateRating',
+      ratingValue: book.rating,
+      bestRating: 5,
+      reviewCount: book.reviewCount || 1
+    } : undefined
+  };
+};
+
+// Breadcrumb structured data
+const generateBreadcrumbData = (book: any) => {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Trang chủ',
+        item: 'https://www.vmedbook.com'
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Sách y khoa',
+        item: 'https://www.vmedbook.com/books'
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: getSpecialtyLabel(book.primarySpecialty),
+        item: `https://www.vmedbook.com/books?specialty=${book.primarySpecialty}`
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: book.title,
+        item: `https://www.vmedbook.com/books/${book.slug}`
+      }
+    ]
+  };
+};
+
+// Server Component
 const SinglePage = async ({ params }: { params: { slug: string } }) => {
   try {
     const response = await getBookBySlug(params.slug);
@@ -139,8 +231,8 @@ const SinglePage = async ({ params }: { params: { slug: string } }) => {
     if (!response.success || !response.data) {
       return (
         <div className="text-center py-8">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Lỗi</h1>
-          <p className="text-red-500">{response.message || 'Không tìm thấy sách'}</p>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Không tìm thấy sách</h1>
+          <p className="text-red-500">{response.message || 'Sách y khoa không tồn tại hoặc đã bị xóa'}</p>
           <a 
             href="/" 
             className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -152,14 +244,38 @@ const SinglePage = async ({ params }: { params: { slug: string } }) => {
     }
 
     const book = response.data;
+    const bookStructuredData = generateStructuredData(book);
+    const breadcrumbData = generateBreadcrumbData(book);
 
-    return <BookDetailClient initialBook={book} medicalSpecialties={medicalSpecialties} />;
+    return (
+      <>
+        {/* Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(bookStructuredData)
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(breadcrumbData)
+          }}
+        />
+        
+        {/* Main Content */}
+        <BookDetailClient 
+          initialBook={book} 
+          medicalSpecialties={medicalSpecialties} 
+        />
+      </>
+    );
   } catch (error) {
     console.error('Error fetching book:', error);
     return (
       <div className="text-center py-8">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Lỗi</h1>
-        <p className="text-red-500">Đã xảy ra lỗi khi tải dữ liệu sách</p>
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Lỗi hệ thống</h1>
+        <p className="text-red-500">Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.</p>
         <a 
           href="/" 
           className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"

@@ -1,6 +1,7 @@
 
 // Define the Book type based on the schema
 interface Book {
+  createdAt: string;
   id: number;
   slug: string;
   title: string;

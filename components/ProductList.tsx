@@ -60,7 +60,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ book }) => {
 
   return (
     <Link 
-      href={`/book/${book.slug}`} // Updated to use slug
+      href={`/books/${book.slug}`} // Updated to use slug
       className='w-full flex flex-col gap-4 sm:w-[45%] lg:w-[22%] group h-[480px]' // Fixed height for card
     >
       <div className='relative w-full h-80'>
