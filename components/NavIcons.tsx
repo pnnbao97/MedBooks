@@ -20,12 +20,12 @@ const NavIcons = () => {
   const pathName = usePathname();
 
   return (
-    <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 relative">
+    <div className="flex items-center gap-4 md:gap-6 lg:gap-8 xl:gap-10 relative">
       {/* Clerk Authentication */}
-      <div className="flex items-center gap-2">
+      
         <SignedOut>
  <SignInButton mode="modal">
-    <button className="text-blue-200 hover:text-white px-3 py-1 rounded-md transition-colors text-sm flex items-center gap-2">
+    <button className="text-blue-200 hover:text-white py-1 rounded-md transition-colors text-sm flex items-center gap-2">
       {/* Show icon for md and below */}
       <span className="block lg:hidden">
         <Image
@@ -44,9 +44,9 @@ const NavIcons = () => {
         
         <SignedIn>
           <div className="flex items-center gap-2">
-            <span className="text-blue-200 text-sm hidden lg:block">
+            {/* <span className="text-blue-200 text-sm hidden xl:block">
               Xin chào, {user?.firstName || 'Bạn'}!
-            </span>
+            </span> */}
             <UserButton 
               appearance={{
                 elements: {
@@ -59,7 +59,7 @@ const NavIcons = () => {
             />
           </div>
         </SignedIn>
-      </div>
+  
 
       {/* Notification */}
       <Image
@@ -75,7 +75,7 @@ const NavIcons = () => {
         className="relative cursor-pointer"
         onClick={() => setIsCartOpen((prev) => !prev)}
       >
-        <Image src="/cart.png" alt="" width={22} height={22} />
+        <Image src="/cart.png" alt="Giỏ hàng" width={22} height={22} />
         <div className="absolute -top-4 -right-4 w-6 h-6 bg-[#F35C7A] rounded-full text-white text-sm flex items-center justify-center">
           2
         </div>

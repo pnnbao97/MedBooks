@@ -1,4 +1,13 @@
-import { BookOpen, Home, ShoppingCart, CircleUser, CircleHelp, X, User } from "lucide-react"
+"use client";
+import React, { useState } from "react";
+import { BookOpen, Home, ShoppingCart, CircleUser, CircleHelp, User, LogOut, Settings, ChevronUp, ChevronDown } from "lucide-react"
+import { 
+  SignedIn, 
+  SignedOut, 
+  useUser,
+  SignInButton,
+  useClerk
+} from "@clerk/nextjs";
 
 import {
   Sidebar,
@@ -17,7 +26,7 @@ import Image from "next/image"
 const items = [
   {
     title: "Trang chủ",
-    url: "#",
+    url: "/",
     icon: Home,
   },
   {
@@ -27,35 +36,47 @@ const items = [
   },
   {
     title: "Danh mục sách",
-    url: "#",
+    url: "/list",
     icon: BookOpen,
   },
   {
-    title: "Tài khoản",
-    url: "#",
+    title: "Theo dõi đơn hàng",
+    url: "/profile",
     icon: CircleUser,
   },
   {
     title: "Hỗ trợ",
-    url: "#",
+    url: "/contact",
     icon: CircleHelp,
   },
 ]
 
 export function AppSidebar() {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsUserMenuOpen(false);
+  };
+
+  const handleProfileClick = () => {
+    window.location.href = '/profile';
+    setIsUserMenuOpen(false);
+  };
+
   return (
-    <Sidebar className="bg-slate-50 --sidebar-width:24rem">
+    <Sidebar className="bg-slate-50 z-30" style={{ '--sidebar-width': '24rem' } as React.CSSProperties}>
       <SidebarContent>
         {/* Header with close button */}
         <div className="flex justify-between items-center p-4 border-b">
-              <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center">
             <Image src="/icons/VMedBook-origin.png" alt="" width={150} height={50} />
-           
           </Link>
           <SidebarTrigger className="p-1 hover:bg-gray-100 rounded" />
         </div>
         <SidebarGroup>
-
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -73,16 +94,82 @@ export function AppSidebar() {
         </SidebarGroup>
         
         {/* User profile section at bottom */}
-        <div className="mt-auto border-t p-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-100 p-2 rounded-full">
-              <User className="text-blue-600" size={24} />
+        <div className="mt-auto border-t">
+          <SignedIn>
+            <div className="relative">
+              {/* User Info Button */}
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="w-full p-4 flex items-center gap-3 hover:bg-blue-50 transition-colors"
+              >
+                <div className="relative">
+                  {user?.imageUrl ? (
+                    <Image
+                      src={user.imageUrl}
+                      alt="User Avatar"
+                      width={40}
+                      height={40}
+                      className="rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <User className="text-blue-600" size={24} />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="text-blue-600 font-semibold truncate">
+                    {user?.fullName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Người dùng'}
+                  </p>
+                  <p className="text-blue-500 text-sm truncate">
+                    {user?.primaryEmailAddress?.emailAddress || 'Email không có'}
+                  </p>
+                </div>
+                <div className="text-blue-500">
+                  {isUserMenuOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
+              </button>
+
+              {/* Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute bottom-full text-sm left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mb-2 py-2 z-50">
+                  <button
+                    onClick={handleProfileClick}
+                    className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors text-gray-700"
+                  >
+                    <Settings size={18} />
+                    <span>Quản lí tài khoản</span>
+                  </button>
+                  <hr className="my-1" />
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-red-50 transition-colors text-red-600"
+                  >
+                    <LogOut size={18} />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-blue-600 font-semibold">Dr. Puma</p>
-              <p className="text-blue-500 text-sm">scream3ktr6@gmail.com</p>
+          </SignedIn>
+          
+          <SignedOut>
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <User className="text-blue-600" size={24} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <SignInButton mode="modal">
+                    <button className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">
+                      Đăng nhập
+                    </button>
+                  </SignInButton>
+                  <p className="text-blue-500 text-sm">Để truy cập đầy đủ tính năng</p>
+                </div>
+              </div>
             </div>
-          </div>
+          </SignedOut>
         </div>
       </SidebarContent>
     </Sidebar>
