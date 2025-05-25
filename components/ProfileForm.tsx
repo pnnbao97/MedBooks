@@ -25,7 +25,7 @@ interface ProfileFormProps {
   profile: any;
   clerkData: any;
   isAdmin?: boolean;
-  userId?: number;
+  userId?: string;
   orders?: Array<{ id: string; date: string; total: number; status: string }>;
 }
 

@@ -1,4 +1,4 @@
-// schema.ts - Updated schema with user profiles
+// schema.ts - Fixed schema with consistent data types
 import { integer, varchar, text, timestamp, pgTable, uuid, pgEnum, date, boolean, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -95,13 +95,33 @@ export const books = pgTable("books", {
   updatedAt: timestamp("updated_at", { withTimezone: true }),
 });
 
-export const carts = pgTable("carts", {
+export const carts = pgTable('carts', {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  bookId: integer("book_id").notNull().references(() => books.id, { onDelete: "cascade" }),
-  quantity: integer("quantity").notNull().default(1),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  userId: uuid('user_id') // FIXED: Changed from integer to uuid
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  bookId: integer('book_id')
+    .notNull()
+    .references(() => books.id, { onDelete: 'cascade' }),
+  quantity: integer('quantity').notNull().default(1),
+  version: varchar('version', { length: 10 })
+    .notNull()
+    .default('color')
+    .$type<'color' | 'photo'>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const cartsRelations = relations(carts, ({ one }) => ({
+  user: one(users, {
+    fields: [carts.userId],
+    references: [users.id],
+  }),
+  book: one(books, {
+    fields: [carts.bookId],
+    references: [books.id],
+  }),
+}));
 
 export const orders = pgTable("orders", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

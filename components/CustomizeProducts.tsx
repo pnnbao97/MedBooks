@@ -1,27 +1,39 @@
-'use client';
+"use client";
 import React, { useState } from 'react';
 
 interface CustomizeProductsProps {
+  bookId: number;
   colorPrice: number;
   photoPrice: number;
   hasColorSale: boolean;
   colorSaleAmount: number;
+  book: {
+    title: string;
+    slug: string;
+    coverUrl: string;
+  };
   onPriceChange: (price: number) => void;
+  onVersionChange: (version: 'color' | 'photo') => void;
 }
 
 const CustomizeProducts = ({
+  bookId,
   colorPrice,
   photoPrice,
   hasColorSale,
   colorSaleAmount,
+  book,
   onPriceChange,
+  onVersionChange,
 }: CustomizeProductsProps) => {
   const [selectedVersion, setSelectedVersion] = useState<'color' | 'photo'>('color');
   const displayColorPrice = hasColorSale ? colorPrice - colorSaleAmount : colorPrice;
 
   const handleVersionChange = (version: 'color' | 'photo') => {
     setSelectedVersion(version);
-    onPriceChange(version === 'color' ? displayColorPrice : photoPrice);
+    const price = version === 'color' ? displayColorPrice : photoPrice;
+    onPriceChange(price);
+    onVersionChange(version);
   };
 
   return (
@@ -34,10 +46,10 @@ const CustomizeProducts = ({
           }`}
           onClick={() => handleVersionChange('color')}
         >
-          Bản gốc (bìa cứng, in màu) - {displayColorPrice.toLocaleString()} VNĐ
+          Bản gốc (bìa cứng, in màu) - {(displayColorPrice * 1000).toLocaleString()} VNĐ
           {hasColorSale && (
             <span className="ml-2 text-red-500">
-              (Giảm {colorSaleAmount.toLocaleString()} VNĐ)
+              (Giảm {(colorSaleAmount * 1000).toLocaleString()} VNĐ)
             </span>
           )}
         </li>
@@ -47,11 +59,11 @@ const CustomizeProducts = ({
           }`}
           onClick={() => handleVersionChange('photo')}
         >
-          Bản photo (bìa mềm, in đen trắng) - {photoPrice.toLocaleString()} VNĐ
+          Bản photo (bìa mềm, in đen trắng) - {(photoPrice * 1000).toLocaleString()} VNĐ
         </li>
       </ul>
     </div>
   );
 };
 
-export default CustomizeProducts
+export default CustomizeProducts;

@@ -30,31 +30,6 @@ interface MedicalSpecialty {
   label: string;
 }
 
-interface Book {
-  id: number;
-  title: string;
-  slug: string;
-  author: string;
-  description: string;
-  detail: string;
-  content?: string;
-  isbn?: string;
-  primarySpecialty: string;
-  relatedSpecialties: string[];
-  relatedBooks: { id: number; title: string; slug: string }[];
-  previewImages: string[];
-  pdfUrl?: string;
-  colorPrice: number;
-  photoPrice: number;
-  hasColorSale: boolean;
-  colorSaleAmount: number;
-  availableCopies: number;
-  isCompleted: boolean;
-  preorder: boolean;
-  predictDate?: string;
-  createdAt: string;
-}
-
 interface BookDetailClientProps {
   initialBook: Book;
   medicalSpecialties: MedicalSpecialty[];
@@ -69,7 +44,7 @@ const getSpecialtyLabel = (value: string, medicalSpecialties: MedicalSpecialty[]
 const StructuredData = ({ book, medicalSpecialties }: { book: Book; medicalSpecialties: MedicalSpecialty[] }) => {
   const displayPrice = (book.hasColorSale 
     ? book.colorPrice - book.colorSaleAmount 
-    : book.colorPrice) * 1000; // Multiply by 1000
+    : book.colorPrice) * 1000;
 
   const bookStructuredData = {
     "@context": "https://schema.org/",
@@ -121,7 +96,7 @@ const StructuredData = ({ book, medicalSpecialties }: { book: Book; medicalSpeci
         "@type": "ListItem",
         "position": 2,
         "name": getSpecialtyLabel(book.primarySpecialty, medicalSpecialties),
-        "item": `https://www.vmedbook.com/books/${book.primarySpecialty}`
+        "item": `https://www.vmedbook.com/books?specialty=${book.primarySpecialty}`
       },
       {
         "@type": "ListItem",
@@ -175,13 +150,11 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
   const [displayPrice, setDisplayPrice] = useState<number>(
     (initialBook.hasColorSale
       ? initialBook.colorPrice - initialBook.colorSaleAmount
-      : initialBook.colorPrice) * 1000 // Multiply by 1000
+      : initialBook.colorPrice) * 1000
   );
 
-  // Tối ưu hóa mô tả với từ khóa
   const optimizedDescription = `${initialBook.description} Đây là sách y khoa chuyên về ${getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}, phù hợp cho sinh viên, bác sĩ và chuyên gia y tế.`;
 
-  // Tối ưu hóa chi tiết với từ khóa
   const optimizedDetail = `${initialBook.detail} Cuốn sách này cung cấp kiến thức chuyên sâu về ${getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}, hỗ trợ học tập và nghiên cứu y khoa.`;
 
   return (
@@ -189,7 +162,6 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
       <StructuredData book={initialBook} medicalSpecialties={medicalSpecialties} />
       
       <div className="flex flex-col px-4 py-8 md:px-8 lg:px-16 xl:px-32 2xl:px-64">
-        {/* BREADCRUMB */}
         <nav className="mb-4" aria-label="Breadcrumb">
           <Breadcrumb>
             <BreadcrumbList>
@@ -198,7 +170,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href={`/books/${initialBook.primarySpecialty}`}>
+                <BreadcrumbLink href={`/books?specialty=${initialBook.primarySpecialty}`}>
                   {getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -211,26 +183,24 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
         </nav>
 
         <article className="relative flex flex-col lg:flex-row gap-16" itemScope itemType="https://schema.org/Book">
-          {/* IMAGES */}
           <div className="w-full lg:w-1/2 top-20 h-max">
             <Suspense fallback={<ComponentSkeleton />}>
               <ProductImages 
                 previewImages={initialBook.previewImages} 
-                pdfUrl={initialBook.pdfUrl}
+                pdfUrl={initialBook.pdfUrl ?? ''}
                 bookTitle={initialBook.title}
                 bookAuthor={initialBook.author}
               />
             </Suspense>
           </div>
 
-          {/* CONTENT */}
           <div className="w-full lg:w-1/2 flex flex-col gap-6">
             <header>
               <h1 
                 className="text-4xl font-medium capitalize text-blue-900"
                 itemProp="name"
               >
-                {initialBook.title} - Sách Y Khoa {getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}
+                {initialBook.title}
               </h1>
               <h2 
                 className="text-xl font-semibold text-blue-700"
@@ -249,7 +219,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
 
             <div className="flex flex-wrap gap-2" role="list" aria-label="Chuyên khoa">
               <Link
-                href={`/books/${initialBook.primarySpecialty}`}
+                href={`/books?specialty=${initialBook.primarySpecialty}`}
                 className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
                 role="listitem"
                 itemProp="genre"
@@ -259,7 +229,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
               {initialBook.relatedSpecialties.map((specialty) => (
                 <Link
                   key={specialty}
-                  href={`/books/${specialty}`}
+                  href={`/books?specialty=${specialty}`}
                   className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
                   role="listitem"
                 >
@@ -270,7 +240,6 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
 
             <hr className="border-gray-200" />
 
-            {/* PRICING */}
             {(initialBook.isCompleted || initialBook.preorder) && (
               <div className="flex items-center gap-4" role="group" aria-label="Giá sản phẩm" itemProp="offers" itemScope itemType="https://schema.org/Offer">
                 <meta itemProp="priceCurrency" content="VND" />
@@ -294,7 +263,6 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
             
             <hr className="border-gray-200" />
 
-            {/* PREORDER INFO */}
             {!initialBook.isCompleted && initialBook.preorder && initialBook.predictDate && (
               <div className="text-sm text-gray-600" role="status">
                 <p>
@@ -309,31 +277,35 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
               </div>
             )}
 
-            {/* CUSTOMIZE PRODUCTS */}
             {(initialBook.isCompleted || initialBook.preorder) && (
               <Suspense fallback={<ComponentSkeleton />}>
                 <CustomizeProducts
+                  bookId={initialBook.id} // Ensure bookId is passed
                   colorPrice={initialBook.colorPrice}
                   photoPrice={initialBook.photoPrice}
                   hasColorSale={initialBook.hasColorSale}
                   colorSaleAmount={initialBook.colorSaleAmount}
-                  onPriceChange={(price) => setDisplayPrice(price * 1000)} // Multiply by 1000
-                />
+                  book={{
+                    title: initialBook.title,
+                    slug: initialBook.slug,
+                    coverUrl: initialBook.previewImages[0] || '/default-book-cover.jpg',
+                  }}
+                  onPriceChange={(price) => setDisplayPrice(price)} onVersionChange={function (version: 'color' | 'photo'): void {
+                    throw new Error('Function not implemented.');
+                  } }                />
               </Suspense>
             )}
 
-            {/* ADD TO CART */}
             <Suspense fallback={<ComponentSkeleton />}>
               <Add
+                bookId={initialBook.id} // Add bookId prop
                 availableCopies={initialBook.availableCopies}
                 isCompleted={initialBook.isCompleted}
-                preorder={initialBook.preorder}
-              />
+                preorder={initialBook.preorder} selectedVersion={'color'}              />
             </Suspense>
 
             <hr className="border-gray-200" />
 
-            {/* DETAILS */}
             <section>
               <h3 className="font-medium mb-4">Chi Tiết Sách Y Khoa {initialBook.title}</h3>
               <div className="space-y-2 text-sm">
@@ -365,7 +337,6 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
 
             <hr className="border-gray-200" />
 
-            {/* TABLE OF CONTENTS */}
             {initialBook.content && (
               <section>
                 <h3 className="font-medium mb-4">Mục Lục Sách {initialBook.title}</h3>

@@ -1,1 +1,0 @@
-ALTER TABLE "books" ALTER COLUMN "slug" DROP NOT NULL;

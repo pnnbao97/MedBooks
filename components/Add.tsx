@@ -1,17 +1,23 @@
 'use client';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useCartStore } from '@/hook/cartStore';
+import { useUser } from '@clerk/nextjs';
 
 interface AddProps {
+  bookId: number;
   availableCopies: number;
   isCompleted?: boolean;
   preorder?: boolean;
+  selectedVersion: 'color' | 'photo';
 }
 
-const Add = ({ availableCopies, isCompleted = true, preorder = false }: AddProps) => {
+const Add = ({ bookId, availableCopies, isCompleted = true, preorder = false, selectedVersion }: AddProps) => {
   const [quantity, setQuantity] = useState(1);
-  const maxQuantity = availableCopies > 0 ? availableCopies : 1; // Ensure at least 1 if no copies
+  const maxQuantity = availableCopies > 0 ? availableCopies : 1;
   const canPurchase = (isCompleted || preorder) && availableCopies > 0;
+  const { addItem } = useCartStore();
+  const { user } = useUser();
 
   const handleQuantity = (type: 'i' | 'd') => {
     if (type === 'd' && quantity > 1) {
@@ -22,10 +28,20 @@ const Add = ({ availableCopies, isCompleted = true, preorder = false }: AddProps
     }
   };
 
-  const handlePurchase = () => {
-    if (canPurchase) {
-      // TODO: Implement purchase logic (e.g., add to cart or initiate checkout)
-      console.log(`Purchasing ${quantity} copies of the book`);
+  const handlePurchase = async () => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để thêm vào giỏ hàng');
+      return;
+    }
+    if (!canPurchase) {
+      alert('Sách hiện chưa có sẵn để đặt hàng');
+      return;
+    }
+    try {
+      await addItem(bookId, selectedVersion, quantity);
+      alert(`Đã thêm ${quantity} cuốn (${selectedVersion === 'color' ? 'bản gốc' : 'bản photo'}) vào giỏ hàng`);
+    } catch (error: any) {
+      alert(`Lỗi: ${error.message}`);
     }
   };
 
@@ -59,7 +75,7 @@ const Add = ({ availableCopies, isCompleted = true, preorder = false }: AddProps
           <Button
             className="w-[180px] text-lg rounded-3xl bg-white text-red-700 border border-red-950 hover:bg-red-800 hover:text-white disabled:bg-blue-200 disabled:text-white disabled:cursor-not-allowed"
             onClick={handlePurchase}
-            disabled={!canPurchase}
+            disabled={!canPurchase || !user}
           >
             {isCompleted ? 'Mua sách' : preorder ? 'Đặt trước' : 'Mua sách'}
           </Button>

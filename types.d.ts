@@ -38,6 +38,7 @@ interface BookParams {
     // Thông tin cơ bản
     title: string;
     author: string;
+    slug: string;
     primarySpecialty: string; // Thay đổi từ genre thành primarySpecialty
     relatedSpecialties: string[]; // Mới: Chuyên ngành liên quan
     relatedBooks: string[]; // Mới: Sách liên quan
