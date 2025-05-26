@@ -1,8 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useCartStore } from '@/hook/cartStore';
+import { useCartStore } from '@/hooks/cartStore';
 import { useUser } from '@clerk/nextjs';
+import { ShoppingCart, Plus, Minus, Package, AlertCircle } from 'lucide-react';
 
 interface AddProps {
   bookId: number;
@@ -14,6 +15,7 @@ interface AddProps {
 
 const Add = ({ bookId, availableCopies, isCompleted = true, preorder = false, selectedVersion }: AddProps) => {
   const [quantity, setQuantity] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const maxQuantity = availableCopies > 0 ? availableCopies : 1;
   const canPurchase = (isCompleted || preorder) && availableCopies > 0;
   const { addItem } = useCartStore();
@@ -37,49 +39,136 @@ const Add = ({ bookId, availableCopies, isCompleted = true, preorder = false, se
       alert('Sách hiện chưa có sẵn để đặt hàng');
       return;
     }
+    
+    setIsLoading(true);
     try {
       await addItem(bookId, selectedVersion, quantity);
       alert(`Đã thêm ${quantity} cuốn (${selectedVersion === 'color' ? 'bản gốc' : 'bản photo'}) vào giỏ hàng`);
     } catch (error: any) {
       alert(`Lỗi: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const versionText = selectedVersion === 'color' ? 'bản gốc' : 'bản photo';
+
   return (
-    <div className="flex flex-col gap-4">
-      <h4 className="font-medium">Số lượng</h4>
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+          <ShoppingCart className="w-4 h-4 text-white" />
+        </div>
+        <h4 className="text-lg font-semibold text-gray-900">Thêm vào giỏ hàng</h4>
+      </div>
+
+      {/* Stock Status */}
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+        <div className="flex items-center gap-3">
+          <Package className="w-5 h-5 text-blue-600" />
+          <div>
+            <p className="text-sm font-medium text-gray-900">Tình trạng kho</p>
+            <p className="text-xs text-gray-600">Phiên bản {versionText}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-bold text-blue-600">{availableCopies} cuốn</p>
+          <p className="text-xs text-gray-500">có sẵn</p>
+        </div>
+      </div>
+
+      {/* Quantity Selector */}
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-gray-700">
+          Chọn số lượng
+        </label>
         <div className="flex items-center gap-4">
-          <div className="bg-gray-100 py-2 px-4 rounded-3xl flex items-center justify-between w-32">
+          <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl p-1 shadow-sm">
             <Button
-              className="text-xl bg-gray-100 hover:bg-gray-100"
+              variant="ghost"
+              size="sm"
+              className="w-10 h-10 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => handleQuantity('d')}
               disabled={quantity <= 1 || !canPurchase}
             >
-              -
+              <Minus className="w-4 h-4" />
             </Button>
-            {quantity}
+            <div className="w-16 text-center">
+              <span className="text-lg font-semibold text-gray-900">{quantity}</span>
+            </div>
             <Button
-              className="text-xl bg-gray-100 hover:bg-gray-100"
+              variant="ghost"
+              size="sm"
+              className="w-10 h-10 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => handleQuantity('i')}
               disabled={quantity >= maxQuantity || !canPurchase}
             >
-              +
+              <Plus className="w-4 h-4" />
             </Button>
           </div>
-          <div>
-            Còn lại <span className="text-orange-500">{availableCopies}</span> cuốn
+          
+          {/* Quantity Info */}
+          <div className="flex-1">
+            <p className="text-sm text-gray-600">
+              Tối đa <span className="font-medium text-gray-900">{maxQuantity}</span> cuốn
+            </p>
+            {quantity === maxQuantity && (
+              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" />
+                Đã đạt giới hạn số lượng
+              </p>
+            )}
           </div>
         </div>
-        <div>
-          <Button
-            className="w-[180px] text-lg rounded-3xl bg-white text-red-700 border border-red-950 hover:bg-red-800 hover:text-white disabled:bg-blue-200 disabled:text-white disabled:cursor-not-allowed"
-            onClick={handlePurchase}
-            disabled={!canPurchase || !user}
-          >
-            {isCompleted ? 'Mua sách' : preorder ? 'Đặt trước' : 'Mua sách'}
-          </Button>
-        </div>
+      </div>
+
+      {/* Add to Cart Button */}
+      <div className="pt-4">
+        <Button
+          onClick={handlePurchase}
+          disabled={!canPurchase || !user || isLoading}
+          className={`w-full h-14 text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg ${
+            canPurchase && user
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-200'
+              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Đang thêm...
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <ShoppingCart className="w-5 h-5" />
+              {isCompleted ? 'Thêm vào giỏ hàng' : preorder ? 'Đặt trước ngay' : 'Thêm vào giỏ hàng'}
+            </div>
+          )}
+        </Button>
+
+        {/* Status Messages */}
+        {!user && (
+          <p className="text-sm text-amber-600 text-center mt-3 flex items-center justify-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            Vui lòng đăng nhập để thực hiện mua hàng
+          </p>
+        )}
+        
+        {!canPurchase && user && (
+          <p className="text-sm text-red-600 text-center mt-3 flex items-center justify-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            Sản phẩm hiện không khả dụng
+          </p>
+        )}
+
+        {canPurchase && user && (
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800 text-center">
+              ✅ Sẵn sàng thêm <span className="font-medium">{quantity} cuốn</span> ({versionText}) vào giỏ hàng
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

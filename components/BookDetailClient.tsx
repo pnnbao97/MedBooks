@@ -147,6 +147,7 @@ const StructuredData = ({ book, medicalSpecialties }: { book: Book; medicalSpeci
 };
 
 const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientProps) => {
+  const [selectedVersion, setSelectedVersion] = useState<'color' | 'photo'>('color');
   const [displayPrice, setDisplayPrice] = useState<number>(
     (initialBook.hasColorSale
       ? initialBook.colorPrice - initialBook.colorSaleAmount
@@ -156,6 +157,14 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
   const optimizedDescription = `${initialBook.description} Đây là sách y khoa chuyên về ${getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}, phù hợp cho sinh viên, bác sĩ và chuyên gia y tế.`;
 
   const optimizedDetail = `${initialBook.detail} Cuốn sách này cung cấp kiến thức chuyên sâu về ${getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}, hỗ trợ học tập và nghiên cứu y khoa.`;
+
+  const handleVersionChange = (version: 'color' | 'photo') => {
+    setSelectedVersion(version);
+  };
+
+  const handlePriceChange = (price: number) => {
+    setDisplayPrice(price);
+  };
 
   return (
     <>
@@ -245,13 +254,13 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                 <meta itemProp="priceCurrency" content="VND" />
                 <meta itemProp="availability" content={initialBook.availableCopies > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"} />
                 
-                {initialBook.hasColorSale && (
+                {selectedVersion === 'color' && initialBook.hasColorSale && (
                   <span className="text-xl text-gray-500 line-through" aria-label="Giá gốc">
                     {(initialBook.colorPrice * 1000).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
                   </span>
                 )}
                 <span 
-                  className="font-medium text-2xl" 
+                  className="font-medium text-2xl text-red-600" 
                   aria-label="Giá hiện tại"
                   itemProp="price"
                   content={(displayPrice).toString()}
@@ -260,8 +269,6 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                 </span>
               </div>
             )}
-            
-            <hr className="border-gray-200" />
 
             {!initialBook.isCompleted && initialBook.preorder && initialBook.predictDate && (
               <div className="text-sm text-gray-600" role="status">
@@ -277,32 +284,39 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
               </div>
             )}
 
+            {/* Combined Product Customization and Add to Cart Section */}
             {(initialBook.isCompleted || initialBook.preorder) && (
-              <Suspense fallback={<ComponentSkeleton />}>
-                <CustomizeProducts
-                  bookId={initialBook.id} // Ensure bookId is passed
-                  colorPrice={initialBook.colorPrice}
-                  photoPrice={initialBook.photoPrice}
-                  hasColorSale={initialBook.hasColorSale}
-                  colorSaleAmount={initialBook.colorSaleAmount}
-                  book={{
-                    title: initialBook.title,
-                    slug: initialBook.slug,
-                    coverUrl: initialBook.previewImages[0] || '/default-book-cover.jpg',
-                  }}
-                  onPriceChange={(price) => setDisplayPrice(price)} onVersionChange={function (version: 'color' | 'photo'): void {
-                    throw new Error('Function not implemented.');
-                  } }                />
-              </Suspense>
-            )}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 shadow-sm">
+                <Suspense fallback={<ComponentSkeleton />}>
+                  <CustomizeProducts
+                    bookId={initialBook.id}
+                    colorPrice={initialBook.colorPrice}
+                    photoPrice={initialBook.photoPrice}
+                    hasColorSale={initialBook.hasColorSale}
+                    colorSaleAmount={initialBook.colorSaleAmount}
+                    book={{
+                      title: initialBook.title,
+                      slug: initialBook.slug,
+                      coverUrl: initialBook.previewImages[0] || '/default-book-cover.jpg',
+                    }}
+                    onPriceChange={handlePriceChange}
+                    onVersionChange={handleVersionChange}
+                  />
+                </Suspense>
 
-            <Suspense fallback={<ComponentSkeleton />}>
-              <Add
-                bookId={initialBook.id} // Add bookId prop
-                availableCopies={initialBook.availableCopies}
-                isCompleted={initialBook.isCompleted}
-                preorder={initialBook.preorder} selectedVersion={'color'}              />
-            </Suspense>
+                <div className="mt-6 pt-6 border-t border-blue-200">
+                  <Suspense fallback={<ComponentSkeleton />}>
+                    <Add
+                      bookId={initialBook.id}
+                      availableCopies={initialBook.availableCopies}
+                      isCompleted={initialBook.isCompleted}
+                      preorder={initialBook.preorder}
+                      selectedVersion={selectedVersion}
+                    />
+                  </Suspense>
+                </div>
+              </div>
+            )}
 
             <hr className="border-gray-200" />
 

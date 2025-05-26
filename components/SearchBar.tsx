@@ -28,7 +28,7 @@ const SearchBar = () => {
         placeholder="Tìm kiếm sách"
         className="flex-1 bg-transparent outline-none"
       />
-      <Button className="cursor-pointer bg-white">
+      <Button className="cursor-pointer bg-white hover:bg-blue-900">
         <Image src="/search.png" alt="Search" width={16} height={16} />
       </Button>
     </form>

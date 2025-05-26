@@ -16,43 +16,42 @@ import {
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// Các thành phần danh mục sách (có thể thay thế bằng dữ liệu thực tế của bạn)
 const bookCategories: { title: string; href: string; description: string }[] = [
   {
-    title: "Y học cơ bản",
-    href: "/category/basic-medicine",
-    description: "Sách về giải phẫu học, sinh lý học và các nguyên lý y học cơ bản.",
+    title: "Y học cơ sở",
+    href: "/books?specialty=co-so",
+    description: "Giải phẫu học, sinh lý học, sinh lý bệnh, miễn dịch học, vi sinh, hóa sinh y học, dược lý học",
   },
   {
-    title: "Dược học",
-    href: "/category/pharmacy",
-    description: "Sách về dược lý học, điều chế thuốc và dược phẩm.",
-  },
-  {
-    title: "Nhi khoa",
-    href: "/category/pediatrics",
-    description: "Sách chuyên về chăm sóc và điều trị bệnh lý ở trẻ em.",
+    title: "Sản phụ khoa",
+    href: "/books?specialty=san-phu-khoa",
+    description: "Sản phụ khoa, nội tiết học sinh sản, vô sinh, ung thư học phụ khoa",
   },
   {
     title: "Nội khoa",
-    href: "/category/internal-medicine",
-    description: "Sách về các bệnh nội khoa và phương pháp điều trị.",
+    href: "/books?specialty=noi-khoa",
+    description: "Nội tổng quát, nội tiết, truyền nhiễm, tim mạch học, hô hấp, thần kinh học, tiêu hóa",
   },
   {
     title: "Ngoại khoa",
-    href: "/category/surgery",
-    description: "Sách về phẫu thuật và các kỹ thuật phẫu thuật.",
+    href: "/books?specialty=ngoai-khoa",
+    description: "Ngoại khoa, ung bướu, chẩn đoán hình ảnh, chấn thương chỉnh hình, tiết niệu",
   },
   {
-    title: "Y học cổ truyền",
-    href: "/category/traditional-medicine",
-    description: "Sách về các phương pháp điều trị y học cổ truyền và thảo dược.",
+    title: "Cấp cứu",
+    href: "/books?specialty=cap-cuu",
+    description: "Cấp cứu, hồi sức tích cực, ngộ độc, các thủ thuật trong cấp cứu",
+  },
+  {
+    title: "Ôn tập - Lượng giá",
+    href: "/books?specialty=mcq",
+    description: "USMLE, series Case Files, PreTest, BRS,...",
   },
 ];
 
 // ListItem component cho menu
 const ListItem = React.forwardRef<
-  React.ElementRef<typeof Link>,
+  HTMLAnchorElement,
   React.ComponentPropsWithoutRef<typeof Link> & { title: string }
 >(({ className, title, children, ...props }, ref) => {
   return (
@@ -61,7 +60,7 @@ const ListItem = React.forwardRef<
         <Link
           ref={ref}
           className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-blue-700 hover:text-white focus:bg-blue-700 focus:text-white",
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none",
             className
           )}
           {...props}
@@ -79,7 +78,7 @@ ListItem.displayName = "ListItem";
 
 const Navbar = () => {
   return (
-    <div className="font-semibold bg-blue-950 text-blue-200 h-20 px-4 md:px-8 relative">
+    <div className="font-semibold bg-blue-950  h-20 px-4 md:px-8 relative">
       {/* MOBILE */}
       <div className="h-full flex items-center justify-between sticky md:hidden">
         <div className="flex items-center gap-6">
@@ -105,14 +104,18 @@ const Navbar = () => {
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
-                  <NavigationMenuLink asChild className="bg-blue-950">
+                  <NavigationMenuLink asChild className="bg-blue-950 text-slate-300">
                     <Link href="/" className={navigationMenuTriggerStyle()}>
                       Trang chủ
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="bg-blue-950">Danh mục sách</NavigationMenuTrigger>
+                  <NavigationMenuTrigger className="bg-blue-950 text-slate-300">
+                      <Link href="/books">
+                      Danh mục sách
+                    </Link>
+                  </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
                       {bookCategories.map((category) => (
@@ -128,7 +131,7 @@ const Navbar = () => {
                   </NavigationMenuContent>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <NavigationMenuLink asChild className="bg-blue-950">
+                  <NavigationMenuLink asChild className="bg-blue-950 text-slate-300">
                     <Link href="/contact" className={navigationMenuTriggerStyle()}>
                       Liên hệ
                     </Link>

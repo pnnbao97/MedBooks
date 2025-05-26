@@ -72,7 +72,7 @@ export function AppSidebar() {
         {/* Header with close button */}
         <div className="flex justify-between items-center p-4 border-b">
           <Link href="/" className="flex items-center">
-            <Image src="/icons/VMedBook-origin.png" alt="" width={150} height={50} />
+            <Image src="/icons/VMedBook.png" alt="" width={150} height={50} />
           </Link>
           <SidebarTrigger className="p-1 hover:bg-gray-100 rounded" />
         </div>
