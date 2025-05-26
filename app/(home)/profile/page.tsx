@@ -10,7 +10,7 @@ export default async function ProfilePage() {
     redirect('/sign-in');
   }
 
-  const profile = userData.db ? await getUserProfile(userData.db.id) : null;
+  const profile = userData.db ? await getUserProfile(userData.db.clerkId) : null;
 
   // Mock order data - replace with actual order fetching logic
   const mockOrders = [

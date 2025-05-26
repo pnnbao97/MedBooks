@@ -1,6 +1,5 @@
-// lib/checkout.ts - API functions for checkout
 'use server';
-import { db } from '@/database/drizzle'; // Your database connection
+import { db } from '@/database/drizzle';
 import { 
   carts, 
   books, 
@@ -71,7 +70,6 @@ export interface ShippingAddress {
 // Get user's cart items with book details
 export async function getUserCartItems(clerkId: string): Promise<CartItemWithBook[]> {
   try {
-    // Check if user exists
     const user = await db
       .select()
       .from(users)
@@ -100,15 +98,30 @@ export async function getUserCartItems(clerkId: string): Promise<CartItemWithBoo
       })
       .from(carts)
       .innerJoin(books, eq(carts.bookId, books.id))
-      .where(eq(carts.userId, clerkId)); // Direct reference to clerkId
+      .where(eq(carts.userId, clerkId));
 
-    return cartItems;
+    return cartItems.map(item => ({
+      ...item,
+      book: {
+        ...item.book,
+        coverUrl: item.book.coverUrl ?? ''
+      }
+    }));
   } catch (error) {
     console.error('Error fetching cart items:', error);
     throw new Error('Failed to fetch cart items');
   }
 }
 
+function calculateItemPrice(item: CartItemWithBook): number {
+  const basePrice = item.version === 'color' 
+    ? (item.book.hasColorSale 
+        ? (item.book.colorPrice - item.book.colorSaleAmount) * 1000
+        : item.book.colorPrice * 1000)
+    : item.book.photoPrice * 1000;
+  
+  return basePrice * item.quantity;
+}
 // Validate coupon
 export async function validateCoupon(code: string, orderAmount: number) {
   try {
@@ -131,20 +144,17 @@ export async function validateCoupon(code: string, orderAmount: number) {
 
     const couponData = coupon[0];
 
-    // Check usage limit
     if (couponData.usageLimit && (couponData.usedCount ?? 0) >= couponData.usageLimit) {
       return { valid: false, error: 'Mã giảm giá đã hết lượt sử dụng' };
     }
 
-    // Check minimum order amount
     if (couponData.minOrderAmount && orderAmount < couponData.minOrderAmount) {
       return { 
         valid: false, 
-        error: `Đơn hàng tối thiểu ${formatVND(couponData.minOrderAmount)} để sử dụng mã này` 
+        error: `Đơn hàng tối thiểu ${await formatVND({ amount: couponData.minOrderAmount })} để sử dụng mã này` 
       };
     }
 
-    // Calculate discount
     let discountAmount = 0;
     if (couponData.discountType === 'PERCENTAGE') {
       discountAmount = Math.floor((orderAmount * parseFloat(couponData.discountValue.toString())) / 100);
@@ -159,7 +169,7 @@ export async function validateCoupon(code: string, orderAmount: number) {
       valid: true,
       coupon: couponData,
       discountAmount,
-      description: couponData.description || `Giảm ${formatVND(discountAmount)}`
+      description: couponData.description || `Giảm ${await formatVND({ amount: discountAmount })}`
     };
   } catch (error) {
     console.error('Error validating coupon:', error);
@@ -167,34 +177,7 @@ export async function validateCoupon(code: string, orderAmount: number) {
   }
 }
 
-// Calculate item price with discounts
-export async function calculateItemPrice(item: CartItemWithBook): number {
-  const basePrice = item.version === 'color' 
-    ? (item.book.hasColorSale 
-        ? item.book.colorPrice - item.book.colorSaleAmount 
-        : item.book.colorPrice)
-    : item.book.photoPrice;
-  
-  return basePrice * item.quantity; // Remove * 1000 if prices are already in VND
-}
 
-// Calculate order summary
-export async function calculateOrderSummary(
-  items: CartItemWithBook[], 
-  couponDiscount: number = 0
-): OrderSummary {
-  const subtotal = items.reduce((sum, item) => sum + calculateItemPrice(item), 0);
-  const shippingFee = subtotal > 500000 ? 0 : 30000; // Free shipping over 500k
-  const total = Math.max(0, subtotal + shippingFee - couponDiscount);
-
-  return {
-    subtotal,
-    shippingFee,
-    couponDiscount,
-    total,
-    items
-  };
-}
 
 // Generate order number
 function generateOrderNumber(): string {
@@ -206,7 +189,6 @@ function generateOrderNumber(): string {
 // Save shipping address (if requested)
 export async function saveShippingAddress(clerkId: string, addressData: CheckoutData['customerInfo']) {
   try {
-    // Check if user exists
     const user = await db
       .select()
       .from(users)
@@ -215,11 +197,10 @@ export async function saveShippingAddress(clerkId: string, addressData: Checkout
 
     if (!user[0]) throw new Error('User not found');
 
-    // Check if this should be the default address (first address)
     const existingAddresses = await db
       .select({ id: shippingAddresses.id })
       .from(shippingAddresses)
-      .where(eq(shippingAddresses.userId, clerkId)) // Direct reference to clerkId
+      .where(eq(shippingAddresses.userId, clerkId))
       .limit(1);
 
     const isFirstAddress = existingAddresses.length === 0;
@@ -227,7 +208,7 @@ export async function saveShippingAddress(clerkId: string, addressData: Checkout
     const [newAddress] = await db
       .insert(shippingAddresses)
       .values({
-        userId: clerkId, // Direct reference to clerkId
+        userId: clerkId,
         fullName: addressData.fullName,
         phone: addressData.phone,
         email: addressData.email,
@@ -256,7 +237,6 @@ export async function createOrder(
   couponData?: any
 ) {
   try {
-    // Check if user exists
     const user = await db
       .select()
       .from(users)
@@ -265,9 +245,7 @@ export async function createOrder(
 
     if (!user[0]) throw new Error('User not found');
 
-    // Start transaction
     const result = await db.transaction(async (tx) => {
-      // Save shipping address if requested
       let savedAddressId = null;
       if (checkoutData.saveAddress) {
         try {
@@ -278,12 +256,11 @@ export async function createOrder(
         }
       }
 
-      // Create order
       const [order] = await tx
         .insert(orders)
         .values({
           orderNumber: generateOrderNumber(),
-          userId: clerkId, // Direct reference to clerkId
+          userId: clerkId,
           shippingAddressId: savedAddressId,
           shippingFullName: checkoutData.customerInfo.fullName,
           shippingPhone: checkoutData.customerInfo.phone,
@@ -304,7 +281,6 @@ export async function createOrder(
         })
         .returning();
 
-      // Create order items
       const orderItemsData = orderSummary.items.map(item => ({
         orderId: order.id,
         bookId: item.bookId,
@@ -317,7 +293,6 @@ export async function createOrder(
 
       await tx.insert(orderItems).values(orderItemsData);
 
-      // Update coupon usage count
       if (couponData) {
         await tx
           .update(coupons)
@@ -325,10 +300,8 @@ export async function createOrder(
           .where(eq(coupons.id, couponData.id));
       }
 
-      // Clear user's cart
-      await tx.delete(carts).where(eq(carts.userId, clerkId)); // Direct reference to clerkId
+      await tx.delete(carts).where(eq(carts.userId, clerkId));
 
-      // Update book stock
       for (const item of orderSummary.items) {
         await tx
           .update(books)
@@ -351,7 +324,6 @@ export async function createOrder(
 // Get user's shipping addresses
 export async function getUserShippingAddresses(clerkId: string) {
   try {
-    // Check if user exists
     const user = await db
       .select()
       .from(users)
@@ -363,7 +335,7 @@ export async function getUserShippingAddresses(clerkId: string) {
     const addresses = await db
       .select()
       .from(shippingAddresses)
-      .where(eq(shippingAddresses.userId, clerkId)) // Direct reference to clerkId
+      .where(eq(shippingAddresses.userId, clerkId))
       .orderBy(shippingAddresses.isDefault, shippingAddresses.createdAt);
 
     return addresses;
@@ -374,11 +346,11 @@ export async function getUserShippingAddresses(clerkId: string) {
 }
 
 // Utility function to format VND
-export async function formatVND(amount: number): string {
+function formatVND({ amount }: { amount: number; }): string {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(amount);
-}
+} 
