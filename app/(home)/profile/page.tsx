@@ -37,7 +37,7 @@ export default async function ProfilePage() {
   // Sanitize userData, profile, and clerkData to ensure they are plain objects
   const sanitizedUserData = userData.db
     ? {
-        id: userData.db.id,
+        id: userData.db.clerkId,
         phone: userData.db.phone || '',
         address: userData.db.address || '',
         status: userData.db.status || '',
@@ -78,7 +78,7 @@ export default async function ProfilePage() {
       profile={sanitizedProfile}
       clerkData={sanitizedClerkData}
       isAdmin={userData.isAdmin}
-      userId={userData.db?.id}
+      userId={userData.db?.clerkId}
       orders={mockOrders}
     />
   );

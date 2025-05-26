@@ -33,7 +33,7 @@ export async function updateProfileAction(data: UpdateProfileData) {
           address: address || null,
           updatedAt: new Date(),
         })
-        .where(eq(users.id, userId));
+        .where(eq(users.clerkId, userId));
     }
 
     // Update user profile info using the utility function

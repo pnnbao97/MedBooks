@@ -4,7 +4,6 @@ import { users, userProfiles } from '@/database/schema'; // Adjust path to your 
 import { eq, and } from 'drizzle-orm';
 
 export interface UserData {
-  id: string;
   clerkId: string;
   fullName: string;
   email: string;
@@ -133,8 +132,8 @@ export async function getUserWithProfile(userId: string) {
     const result = await db
       .select()
       .from(users)
-      .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
-      .where(and(eq(users.id, userId), eq(users.isActive, true)))
+      .leftJoin(userProfiles, eq(users.clerkId, userProfiles.userId))
+      .where(and(eq(users.clerkId, userId), eq(users.isActive, true)))
       .limit(1);
     
     // if (!result[0]) return null;
@@ -166,7 +165,7 @@ export async function getAllUsers(page: number = 1, limit: number = 10) {
         profile: userProfiles
       })
       .from(users)
-      .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+      .leftJoin(userProfiles, eq(users.clerkId, userProfiles.userId))
       .where(eq(users.isActive, true))
       .orderBy(users.createdAt)
       .limit(limit)
@@ -174,7 +173,7 @@ export async function getAllUsers(page: number = 1, limit: number = 10) {
     
     // Get total count
     const countResult = await db
-      .select({ count: users.id })
+      .select({ count: users.clerkId })
       .from(users)
       .where(eq(users.isActive, true));
     
@@ -235,7 +234,7 @@ export async function softDeleteUser(userId: string) {
         isActive: false, 
         updatedAt: new Date() 
       })
-      .where(eq(users.id, userId));
+      .where(eq(users.clerkId, userId));
   } catch (error) {
     console.error('Error soft deleting user:', error);
     throw error;
