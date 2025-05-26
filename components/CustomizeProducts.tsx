@@ -37,6 +37,16 @@ const CustomizeProducts = ({
     onVersionChange(version);
   };
 
+  // Helper function để format tiền VND
+  const formatVND = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount * 1000);
+  };
+
   const versions = [
     {
       type: 'color' as const,
@@ -120,17 +130,17 @@ const CustomizeProducts = ({
               <div className="flex items-baseline gap-2">
                 {version.originalPrice && (
                   <span className="text-lg text-gray-400 line-through">
-                    {(version.originalPrice * 1000).toLocaleString()} VNĐ
+                    {formatVND(version.originalPrice)}
                   </span>
                 )}
                 <span className="text-2xl font-bold text-gray-900">
-                  {(version.price * 1000).toLocaleString()} VNĐ
+                  {formatVND(version.price)}
                 </span>
               </div>
               {version.originalPrice && (
                 <div className="inline-block">
                   <Badge variant="destructive" className="text-xs mt-1">
-                    Tiết kiệm {((version.originalPrice - version.price) * 1000).toLocaleString()} VNĐ
+                    Tiết kiệm {formatVND(version.originalPrice - version.price)}
                   </Badge>
                 </div>
               )}
@@ -173,7 +183,7 @@ const CustomizeProducts = ({
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-blue-600">
-              {(versions.find(v => v.type === selectedVersion)?.price! * 1000).toLocaleString()} VNĐ
+              {formatVND(versions.find(v => v.type === selectedVersion)?.price!)}
             </div>
           </div>
         </div>

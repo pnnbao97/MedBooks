@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/hooks/cartStore';
 import { useUser } from '@clerk/nextjs';
-import { ShoppingCart, Plus, Minus, Package, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Package, AlertCircle, CheckCircle, CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface AddProps {
   bookId: number;
@@ -11,15 +13,24 @@ interface AddProps {
   isCompleted?: boolean;
   preorder?: boolean;
   selectedVersion: 'color' | 'photo';
+  bookTitle?: string;
 }
 
-const Add = ({ bookId, availableCopies, isCompleted = true, preorder = false, selectedVersion }: AddProps) => {
+const Add = ({ 
+  bookId, 
+  availableCopies, 
+  isCompleted = true, 
+  preorder = false, 
+  selectedVersion,
+  bookTitle = 'sách'
+}: AddProps) => {
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const maxQuantity = availableCopies > 0 ? availableCopies : 1;
   const canPurchase = (isCompleted || preorder) && availableCopies > 0;
   const { addItem } = useCartStore();
   const { user } = useUser();
+  const router = useRouter();
 
   const handleQuantity = (type: 'i' | 'd') => {
     if (type === 'd' && quantity > 1) {
@@ -30,22 +41,71 @@ const Add = ({ bookId, availableCopies, isCompleted = true, preorder = false, se
     }
   };
 
+  const handleCheckout = () => {
+    router.push('/checkout');
+  };
+
   const handlePurchase = async () => {
     if (!user) {
-      alert('Vui lòng đăng nhập để thêm vào giỏ hàng');
+      toast.error('Vui lòng đăng nhập để thêm vào giỏ hàng', {
+        description: 'Bạn cần đăng nhập để có thể mua sách',
+        duration: 5000,
+      });
       return;
     }
+    
     if (!canPurchase) {
-      alert('Sách hiện chưa có sẵn để đặt hàng');
+      toast.error('Sách hiện chưa có sẵn để đặt hàng', {
+        description: 'Vui lòng thử lại sau',
+        duration: 5000,
+      });
       return;
     }
     
     setIsLoading(true);
     try {
       await addItem(bookId, selectedVersion, quantity);
-      alert(`Đã thêm ${quantity} cuốn (${selectedVersion === 'color' ? 'bản gốc' : 'bản photo'}) vào giỏ hàng`);
+      
+      // Success toast with checkout action
+      const versionText = selectedVersion === 'color' ? 'bản gốc' : 'bản photo';
+      toast.success(
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="font-semibold">Thêm vào giỏ hàng thành công!</span>
+          </div>
+          <p className="text-sm text-gray-600">
+            Đã thêm {quantity} cuốn "{bookTitle}" ({versionText}) vào giỏ hàng
+          </p>
+        </div>,
+        {
+          duration: 10000,
+          action: {
+            label: (
+              <div className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <CreditCard className="w-4 h-4" />
+                <span className="font-medium">Thanh toán ngay</span>
+              </div>
+            ),
+            onClick: handleCheckout,
+          },
+          style: {
+            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+            border: '1px solid #0ea5e9',
+            borderRadius: '12px',
+          },
+        }
+      );
     } catch (error: any) {
-      alert(`Lỗi: ${error.message}`);
+      toast.error('Có lỗi xảy ra khi thêm vào giỏ hàng', {
+        description: error.message || 'Vui lòng thử lại sau',
+        duration: 5000,
+        style: {
+          background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+          border: '1px solid #ef4444',
+          borderRadius: '12px',
+        },
+      });
     } finally {
       setIsLoading(false);
     }
