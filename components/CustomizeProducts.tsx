@@ -47,83 +47,111 @@ const CustomizeProducts = ({
     }).format(amount * 1000);
   };
 
-  const versions = [
-    {
-      type: 'color' as const,
-      title: 'Bản Gốc',
-      description: 'Bìa cứng, in màu cao cấp',
-      price: displayColorPrice,
-      originalPrice: hasColorSale ? colorPrice : null,
-      features: ['In màu chất lượng cao', 'Bìa cứng bền đẹp', 'Giấy cao cấp'],
-      popular: true,
-      icon: '🎨',
-      gradient: 'from-blue-500 to-indigo-600'
-    },
-    {
-      type: 'photo' as const,
-      title: 'Bản Photo',
-      description: 'Bìa mềm, in đen trắng tiết kiệm',
-      price: photoPrice,
-      originalPrice: null,
-      features: ['In đen trắng rõ nét', 'Bìa mềm tiện lợi', 'Giá cả phải chăng'],
-      popular: false,
-      icon: '📄',
-      gradient: 'from-gray-500 to-gray-600'
-    }
-  ];
+const versions = [
+  {
+    type: 'color' as const,
+    title: 'Bản Gốc',
+    description: 'Bìa cứng, in màu cao cấp',
+    price: displayColorPrice,
+    originalPrice: hasColorSale ? colorPrice : null,
+    features: ['In màu chất lượng cao', 'Bìa cứng bền đẹp', 'Giấy cao cấp'],
+    popular: true,
+    icon: '📖', // Icon đẹp hơn
+    gradient: 'from-blue-500 to-indigo-600',
+
+  },
+  {
+    type: 'photo' as const,
+    title: 'Bản Photo',
+    description: 'Bìa mềm, in đen trắng tiết kiệm',
+    price: photoPrice,
+    originalPrice: null,
+    features: ['In đen trắng rõ nét', 'Bìa mềm tiện lợi', 'Giá cả phải chăng'],
+    popular: false,
+    icon: '📄', // Icon đẹp hơn
+    gradient: 'from-gray-500 to-gray-600',
+
+  }
+];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-          <span className="text-white text-sm font-bold">📚</span>
+          <span className="text-white text-sm font-bold">📖</span>
         </div>
         <h4 className="text-lg font-semibold text-gray-900">Chọn phiên bản sách</h4>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {versions.map((version) => (
-          <div
-            key={version.type}
-            onClick={() => handleVersionChange(version.type)}
-            className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg ${
-              selectedVersion === version.type
-                ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200'
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
-          >
-            {/* Popular Badge */}
-            {version.popular && (
-              <div className="absolute -top-3 left-6">
-                <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 text-xs font-medium">
-                  ⭐ Phổ biến
-                </Badge>
-              </div>
-            )}
+    {versions.map((version) => (
+  <div
+    key={version.type}
+    onClick={() => handleVersionChange(version.type)}
+    className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg ${
+      selectedVersion === version.type
+        ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200'
+        : 'border-gray-200 bg-white hover:border-gray-300'
+    }`}
+  >
+    {/* Popular Badge */}
+    {version.popular && (
+      <div className="absolute -top-3 left-6">
+        <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 text-xs font-medium">
+          ⭐ Phổ biến
+        </Badge>
+      </div>
+    )}
 
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 bg-gradient-to-br ${version.gradient} rounded-xl flex items-center justify-center text-2xl`}>
-                  {version.icon}
-                </div>
-                <div>
-                  <h5 className="font-semibold text-gray-900 text-lg">{version.title}</h5>
-                  <p className="text-sm text-gray-600">{version.description}</p>
-                </div>
-              </div>
-              
-              {/* Radio Button */}
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                selectedVersion === version.type
-                  ? 'border-blue-500 bg-blue-500'
-                  : 'border-gray-300'
-              }`}>
-                {selectedVersion === version.type && (
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                )}
-              </div>
+    {/* Header với ảnh */}
+    <div className="flex items-start justify-between mb-4">
+      <div className="flex items-center gap-3">
+        {/* Hiển thị ảnh cho bản gốc, icon cho bản photo */}
+        {version.type === 'color' ? (
+          <div className="w-12 h-16 rounded-lg overflow-hidden ">
+            <img 
+              src={book.coverUrl}
+              alt={`${version.title} - ${book.title}`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback về icon nếu ảnh lỗi
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+            {/* Fallback icon khi ảnh lỗi */}
+            <div 
+              className={`w-12 h-16 bg-gradient-to-br ${version.gradient} rounded-lg flex items-center justify-center text-2xl`}
+              style={{ display: 'none' }}
+            >
+              {version.icon}
             </div>
+          </div>
+        ) : (
+          <div className={`w-12 h-12 bg-gradient-to-br ${version.gradient} rounded-xl flex items-center justify-center text-2xl`}>
+            {version.icon}
+          </div>
+        )}
+        
+        <div>
+          <h5 className="font-semibold text-gray-900 text-lg">{version.title}</h5>
+          <p className="text-sm text-gray-600">{version.description}</p>
+        </div>
+      </div>
+      
+      {/* Radio Button */}
+      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+        selectedVersion === version.type
+          ? 'border-blue-500 bg-blue-500'
+          : 'border-gray-300'
+      }`}>
+        {selectedVersion === version.type && (
+          <div className="w-2 h-2 bg-white rounded-full"></div>
+        )}
+      </div>
+    </div>
 
             {/* Price */}
             <div className="mb-4">

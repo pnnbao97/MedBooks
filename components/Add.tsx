@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/hooks/cartStore';
-import { useUser } from '@clerk/nextjs';
+import { SignInButton, useUser } from '@clerk/nextjs';
 import { ShoppingCart, Plus, Minus, Package, AlertCircle, CheckCircle, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface AddProps {
   bookId: number;
@@ -211,7 +212,13 @@ const Add = ({
         {!user && (
           <p className="text-sm text-amber-600 text-center mt-3 flex items-center justify-center gap-2">
             <AlertCircle className="w-4 h-4" />
-            Vui lòng đăng nhập để thực hiện mua hàng
+            Vui lòng <span >
+            <span className="font-bold">
+              <SignInButton mode="modal">
+                đăng nhập
+              </SignInButton>
+            </span>
+              </span>để thực hiện mua hàng
           </p>
         )}
         

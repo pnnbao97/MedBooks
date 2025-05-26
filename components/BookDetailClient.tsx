@@ -179,7 +179,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="/">Trang chủ</BreadcrumbLink>
+                <BreadcrumbLink href="/books">Tất cả</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
@@ -199,7 +199,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
         <article className="flex flex-col lg:flex-row lg:gap-8" itemScope itemType="https://schema.org/Book">
           
           {/* Left Column - Product Images + Details (Desktop) / Product Images only (Mobile) */}
-          <div className="w-full lg:w-2/5 lg:top-20 lg:h-max order-1 lg:order-1">
+          <div className="w-full lg:w-2/5 xl:w-1/2 lg:top-20 lg:h-max order-1 lg:order-1">
             <Suspense fallback={<ComponentSkeleton />}>
               <ProductImages 
                 previewImages={initialBook.previewImages} 
@@ -272,19 +272,19 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
           </div>
 
           {/* Main Content Container */}
-          <div className="w-full lg:w-3/5 flex flex-col gap-6 order-2 lg:order-2">
+          <div className="w-full lg:w-3/5 xl:w-1/2 flex flex-col gap-6 order-2 lg:order-2">
             
             {/* Book Title and Description - Order 2 on mobile */}
             <div className="order-2 lg:order-1">
               <header>
                 <h1 
-                  className="text-4xl font-medium capitalize text-blue-900"
+                  className="text-3xl mt-4 lg:mt-0 font-medium capitalize text-blue-950"
                   itemProp="name"
                 >
                   {initialBook.title}
                 </h1>
                 <h2 
-                  className="text-xl font-semibold text-blue-700"
+                  className="text-sm mt-2 font-semibold text-slate-800"
                   itemProp="author"
                 >
                   Tác giả: {initialBook.author}
