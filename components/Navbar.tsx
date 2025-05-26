@@ -78,7 +78,7 @@ ListItem.displayName = "ListItem";
 
 const Navbar = () => {
   return (
-    <div className="font-semibold bg-blue-950  h-20 px-4 md:px-8 relative">
+    <div className="font-semibold bg-blue-950 h-20 px-4 md:px-8 relative z-40">
       {/* MOBILE */}
       <div className="h-full flex items-center justify-between sticky md:hidden">
         <div className="flex items-center gap-6">

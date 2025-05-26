@@ -47,7 +47,7 @@ const NavIcons = () => {
   }, [isCartOpen, isNotificationOpen]);
 
   return (
-    <div className="flex items-center gap-4 md:gap-6 lg:gap-8 xl:gap-10 relative">
+    <div className="flex items-center gap-8 md:gap-6 lg:gap-8 xl:gap-10 relative">
       {/* Clerk Authentication */}
       <SignedOut>
         <SignInButton mode="modal">
@@ -85,7 +85,7 @@ const NavIcons = () => {
         
         {/* Notification Modal */}
         {isNotificationOpen && (
-          <div className="absolute right-0 top-8 w-64 bg-white rounded-lg shadow-lg border z-50 p-4">
+          <div className="absolute right-0 top-8 w-64 bg-white rounded-lg shadow-lg border z-20 p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-800">Thông báo</h3>
               <button 
