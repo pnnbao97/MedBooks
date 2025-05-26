@@ -10,6 +10,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 // Lazy load components
 const Add = lazy(() => import('@/components/Add'));
@@ -153,6 +155,8 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
       ? initialBook.colorPrice - initialBook.colorSaleAmount
       : initialBook.colorPrice) * 1000
   );
+  const [showDetails, setShowDetails] = useState(false);
+  const [showContent, setShowContent] = useState(false);
 
   const optimizedDescription = `${initialBook.description} Đây là sách y khoa chuyên về ${getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}, phù hợp cho sinh viên, bác sĩ và chuyên gia y tế.`;
 
@@ -170,7 +174,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
     <>
       <StructuredData book={initialBook} medicalSpecialties={medicalSpecialties} />
       
-      <div className="flex flex-col px-4 py-8 md:px-8 lg:px-16 xl:px-32 2xl:px-64">
+      <div className="flex flex-col py-8 px-4 md:px-8 xl:px-16 2xl:px-32">
         <nav className="mb-4" aria-label="Breadcrumb">
           <Breadcrumb>
             <BreadcrumbList>
@@ -191,8 +195,11 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
           </Breadcrumb>
         </nav>
 
-        <article className="relative flex flex-col lg:flex-row gap-16" itemScope itemType="https://schema.org/Book">
-          <div className="w-full lg:w-1/2 top-20 h-max">
+        {/* Flexbox container with responsive ordering */}
+        <article className="flex flex-col lg:flex-row lg:gap-8" itemScope itemType="https://schema.org/Book">
+          
+          {/* Left Column - Product Images + Details (Desktop) / Product Images only (Mobile) */}
+          <div className="w-full lg:w-2/5 lg:top-20 lg:h-max order-1 lg:order-1">
             <Suspense fallback={<ComponentSkeleton />}>
               <ProductImages 
                 previewImages={initialBook.previewImages} 
@@ -201,92 +208,158 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                 bookAuthor={initialBook.author}
               />
             </Suspense>
+
+            {/* Book Details Section - Hidden on mobile, shown on desktop */}
+            <div className="hidden lg:block mt-6">
+              <section>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="w-full flex justify-between items-center text-sm font-medium text-blue-950 hover:bg-blue-50"
+                >
+                  <span>Chi Tiết Sách {initialBook.title}</span>
+                  {showDetails ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </Button>
+                {showDetails && (
+                  <div className="mt-2 space-y-2 pl-5 text-sm">
+                    <p>{optimizedDetail}</p>
+                    {initialBook.isbn && (
+                      <p>
+                        <strong>ISBN:</strong> 
+                        <span itemProp="isbn">{initialBook.isbn}</span>
+                      </p>
+                    )}
+                    {initialBook.relatedBooks.length > 0 && (
+                      <p>
+                        <strong>Sách liên quan:</strong>{' '}
+                        {initialBook.relatedBooks.map((relatedBook, index) => (
+                          <span key={relatedBook.id}>
+                            <Link
+                              href={`/books/${relatedBook.slug}`}
+                              className="text-blue-600 hover:underline"
+                            >
+                              {relatedBook.title}
+                            </Link>
+                            {index < initialBook.relatedBooks.length - 1 ? ', ' : ''}
+                          </span>
+                        ))}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* Table of Contents Section - Desktop */}
+              {initialBook.content && (
+                <section className="mt-4">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowContent(!showContent)}
+                    className="w-full flex justify-between items-center text-sm font-medium text-blue-950 hover:bg-blue-50"
+                  >
+                    <span>Mục Lục Sách {initialBook.title}</span>
+                    {showContent ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </Button>
+                  {showContent && (
+                    <div
+                      className="mt-4 list-decimal pl-5 space-y-2 text-sm"
+                      dangerouslySetInnerHTML={{ __html: initialBook.content }}
+                    />
+                  )}
+                </section>
+              )}
+            </div>
           </div>
 
-          <div className="w-full lg:w-1/2 flex flex-col gap-6">
-            <header>
-              <h1 
-                className="text-4xl font-medium capitalize text-blue-900"
-                itemProp="name"
-              >
-                {initialBook.title}
-              </h1>
-              <h2 
-                className="text-xl font-semibold text-blue-700"
-                itemProp="author"
-              >
-                Tác giả: {initialBook.author}
-              </h2>
-            </header>
+          {/* Main Content Container */}
+          <div className="w-full lg:w-3/5 flex flex-col gap-6 order-2 lg:order-2">
+            
+            {/* Book Title and Description - Order 2 on mobile */}
+            <div className="order-2 lg:order-1">
+              <header>
+                <h1 
+                  className="text-4xl font-medium capitalize text-blue-900"
+                  itemProp="name"
+                >
+                  {initialBook.title}
+                </h1>
+                <h2 
+                  className="text-xl font-semibold text-blue-700"
+                  itemProp="author"
+                >
+                  Tác giả: {initialBook.author}
+                </h2>
+              </header>
 
-            <p 
-              className="font-sans text-justify text-gray-800"
-              itemProp="description"
-            >
-              {optimizedDescription}
-            </p>
-
-            <div className="flex flex-wrap gap-2" role="list" aria-label="Chuyên khoa">
-              <Link
-                href={`/books?specialty=${initialBook.primarySpecialty}`}
-                className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
-                role="listitem"
-                itemProp="genre"
+              <p 
+                className="font-sans text-justify text-gray-800 mt-4"
+                itemProp="description"
               >
-                {getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}
-              </Link>
-              {initialBook.relatedSpecialties.map((specialty) => (
+                {optimizedDescription}
+              </p>
+
+              <div className="flex flex-wrap gap-2 mt-4" role="list" aria-label="Chuyên khoa">
                 <Link
-                  key={specialty}
-                  href={`/books?specialty=${specialty}`}
+                  href={`/books?specialty=${initialBook.primarySpecialty}`}
                   className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
                   role="listitem"
+                  itemProp="genre"
                 >
-                  {getSpecialtyLabel(specialty, medicalSpecialties)}
+                  {getSpecialtyLabel(initialBook.primarySpecialty, medicalSpecialties)}
                 </Link>
-              ))}
+                {initialBook.relatedSpecialties.map((specialty) => (
+                  <Link
+                    key={specialty}
+                    href={`/books?specialty=${specialty}`}
+                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
+                    role="listitem"
+                  >
+                    {getSpecialtyLabel(specialty, medicalSpecialties)}
+                  </Link>
+                ))}
+              </div>
+
+              <hr className="border-gray-200 mt-4" />
+
+              {(initialBook.isCompleted || initialBook.preorder) && (
+                <div className="flex items-center gap-4 mt-4" role="group" aria-label="Giá sản phẩm" itemProp="offers" itemScope itemType="https://schema.org/Offer">
+                  <meta itemProp="priceCurrency" content="VND" />
+                  <meta itemProp="availability" content={initialBook.availableCopies > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"} />
+                  
+                  {selectedVersion === 'color' && initialBook.hasColorSale && (
+                    <span className="text-xl text-gray-500 line-through" aria-label="Giá gốc">
+                      {(initialBook.colorPrice * 1000).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+                    </span>
+                  )}
+                  <span 
+                    className="font-medium text-2xl text-red-600" 
+                    aria-label="Giá hiện tại"
+                    itemProp="price"
+                    content={(displayPrice).toString()}
+                  >
+                    {(displayPrice).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
+                  </span>
+                </div>
+              )}
+
+              {!initialBook.isCompleted && initialBook.preorder && initialBook.predictDate && (
+                <div className="text-sm text-gray-600 mt-4" role="status">
+                  <p>
+                    Đặt trước - Dự kiến ra mắt: 
+                    <time 
+                      dateTime={initialBook.predictDate}
+                      itemProp="datePublished"
+                    >
+                      {format(new Date(initialBook.predictDate), 'dd/MM/yyyy')}
+                    </time>
+                  </p>
+                </div>
+              )}
             </div>
 
-            <hr className="border-gray-200" />
-
+            {/* Product Customization and Add to Cart - Order 3 on mobile */}
             {(initialBook.isCompleted || initialBook.preorder) && (
-              <div className="flex items-center gap-4" role="group" aria-label="Giá sản phẩm" itemProp="offers" itemScope itemType="https://schema.org/Offer">
-                <meta itemProp="priceCurrency" content="VND" />
-                <meta itemProp="availability" content={initialBook.availableCopies > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"} />
-                
-                {selectedVersion === 'color' && initialBook.hasColorSale && (
-                  <span className="text-xl text-gray-500 line-through" aria-label="Giá gốc">
-                    {(initialBook.colorPrice * 1000).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
-                  </span>
-                )}
-                <span 
-                  className="font-medium text-2xl text-red-600" 
-                  aria-label="Giá hiện tại"
-                  itemProp="price"
-                  content={(displayPrice).toString()}
-                >
-                  {(displayPrice).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}
-                </span>
-              </div>
-            )}
-
-            {!initialBook.isCompleted && initialBook.preorder && initialBook.predictDate && (
-              <div className="text-sm text-gray-600" role="status">
-                <p>
-                  Đặt trước - Dự kiến ra mắt: 
-                  <time 
-                    dateTime={initialBook.predictDate}
-                    itemProp="datePublished"
-                  >
-                    {format(new Date(initialBook.predictDate), 'dd/MM/yyyy')}
-                  </time>
-                </p>
-              </div>
-            )}
-
-            {/* Combined Product Customization and Add to Cart Section */}
-            {(initialBook.isCompleted || initialBook.preorder) && (
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 shadow-sm">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 shadow-sm order-3 lg:order-2">
                 <Suspense fallback={<ComponentSkeleton />}>
                   <CustomizeProducts
                     bookId={initialBook.id}
@@ -317,50 +390,69 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                 </div>
               </div>
             )}
+          </div>
 
-            <hr className="border-gray-200" />
-
+          {/* Book Details Section - Only shown on mobile, order 4 */}
+          <div className="w-full order-4 lg:hidden mt-6">
             <section>
-              <h3 className="font-medium mb-4">Chi Tiết Sách Y Khoa {initialBook.title}</h3>
-              <div className="space-y-2 text-sm">
-                <p>{optimizedDetail}</p>
-                {initialBook.isbn && (
-                  <p>
-                    <strong>ISBN:</strong> 
-                    <span itemProp="isbn">{initialBook.isbn}</span>
-                  </p>
-                )}
-                {initialBook.relatedBooks.length > 0 && (
-                  <p>
-                    <strong>Sách liên quan:</strong>{' '}
-                    {initialBook.relatedBooks.map((relatedBook, index) => (
-                      <span key={relatedBook.id}>
-                        <Link
-                          href={`/books/${relatedBook.slug}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {relatedBook.title}
-                        </Link>
-                        {index < initialBook.relatedBooks.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                  </p>
-                )}
-              </div>
+              <Button
+                variant="ghost"
+                onClick={() => setShowDetails(!showDetails)}
+                className="w-full flex justify-between items-center text-sm font-medium text-blue-950 hover:bg-blue-50"
+              >
+                <span>Chi Tiết Sách {initialBook.title}</span>
+                {showDetails ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </Button>
+              {showDetails && (
+                <div className="mt-2 space-y-2 pl-5 text-sm">
+                  <p>{optimizedDetail}</p>
+                  {initialBook.isbn && (
+                    <p>
+                      <strong>ISBN:</strong> 
+                      <span itemProp="isbn">{initialBook.isbn}</span>
+                    </p>
+                  )}
+                  {initialBook.relatedBooks.length > 0 && (
+                    <p>
+                      <strong>Sách liên quan:</strong>{' '}
+                      {initialBook.relatedBooks.map((relatedBook, index) => (
+                        <span key={relatedBook.id}>
+                          <Link
+                            href={`/books/${relatedBook.slug}`}
+                            className="text-blue-600 hover:underline"
+                          >
+                            {relatedBook.title}
+                          </Link>
+                          {index < initialBook.relatedBooks.length - 1 ? ', ' : ''}
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                </div>
+              )}
             </section>
 
-            <hr className="border-gray-200" />
-
+            {/* Table of Contents Section - Mobile */}
             {initialBook.content && (
-              <section>
-                <h3 className="font-medium mb-4">Mục Lục Sách {initialBook.title}</h3>
-                <div
-                  className="list-decimal pl-5 space-y-2 text-sm"
-                  dangerouslySetInnerHTML={{ __html: initialBook.content }}
-                />
+              <section className="mt-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowContent(!showContent)}
+                  className="w-full flex justify-between items-center text-sm font-medium text-blue-950 hover:bg-blue-50"
+                >
+                  <span>Mục Lục Sách {initialBook.title}</span>
+                  {showContent ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </Button>
+                {showContent && (
+                  <div
+                    className="mt-4 list-decimal pl-5 space-y-2 text-sm"
+                    dangerouslySetInnerHTML={{ __html: initialBook.content }}
+                  />
+                )}
               </section>
             )}
           </div>
+
         </article>
       </div>
     </>
