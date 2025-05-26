@@ -24,7 +24,7 @@ const bookCategories: { title: string; href: string; description: string }[] = [
   },
   {
     title: "Sản phụ khoa",
-    href: "/books?specialty=san-phu-khoa",
+    href: "/books?specialty=san-phu-khoa",  
     description: "Sản phụ khoa, nội tiết học sinh sản, vô sinh, ung thư học phụ khoa",
   },
   {
@@ -33,7 +33,7 @@ const bookCategories: { title: string; href: string; description: string }[] = [
     description: "Nội tổng quát, nội tiết, truyền nhiễm, tim mạch học, hô hấp, thần kinh học, tiêu hóa",
   },
   {
-    title: "Ngoại khoa",
+    title: "Ngoại khoa", 
     href: "/books?specialty=ngoai-khoa",
     description: "Ngoại khoa, ung bướu, chẩn đoán hình ảnh, chấn thương chỉnh hình, tiết niệu",
   },
@@ -60,7 +60,7 @@ const ListItem = React.forwardRef<
         <Link
           ref={ref}
           className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none",
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
             className
           )}
           {...props}
@@ -78,16 +78,16 @@ ListItem.displayName = "ListItem";
 
 const Navbar = () => {
   return (
-    <div className="font-semibold bg-blue-950 h-20 px-4 md:px-8 relative z-40">
+    <div className="font-semibold bg-blue-950 h-20 px-4 md:px-8 relative md:z-10">
       {/* MOBILE */}
-      <div className="h-full flex items-center justify-between sticky md:hidden">
+      <div className="h-full flex items-center justify-between sticky md:hidden z-50">
         <div className="flex items-center gap-6">
           <SidebarTrigger className="text-blue-200 hover:text-white p-2 h-10 w-10 flex items-center justify-center rounded-md hover:bg-blue-800 transition-colors"/>
           <Link href="/" className="flex items-center">
             <Image src="/icons/VMedBook-blue.png" alt="" width={150} height={60} />
           </Link>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative z-50">
           <NavIcons />
         </div>
       </div>
