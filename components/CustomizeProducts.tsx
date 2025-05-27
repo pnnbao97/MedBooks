@@ -98,7 +98,7 @@ const versions = [
     {version.popular && (
       <div className="absolute -top-3 left-6">
         <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 text-xs font-medium">
-          ⭐ Phổ biến
+          Nên chọn
         </Badge>
       </div>
     )}

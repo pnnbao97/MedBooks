@@ -235,7 +235,7 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                 </div> */}
               </div>
             </div>
-            <h1 className="text-5xl font-bold mb-4 tracking-tight">Thanh toán đơn hàng</h1>
+            <h1 className="text-5xl font-bold mb-4 tracking-tight">Thanh toán</h1>
             <p className="text-xl text-teal-100 font-medium">VMedBook - Nền tảng sách  và tài liệu y khoa hàng đầu Việt Nam</p>
             {/* <p className="text-lg text-cyan-200 mt-2">Hoàn tất bước cuối để sở hữu những cuốn sách được dịch và kiểm định </p> */}
           </div>

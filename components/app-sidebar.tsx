@@ -31,12 +31,12 @@ const items = [
   },
   {
     title: "Giỏ hàng",
-    url: "#",
+    url: "/checkout",
     icon: ShoppingCart
   },
   {
     title: "Danh mục sách",
-    url: "/list",
+    url: "/books",
     icon: BookOpen,
   },
   {
