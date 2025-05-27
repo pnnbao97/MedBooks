@@ -26,7 +26,12 @@ import {
   Truck,
   Phone,
   Mail,
-  User
+  User,
+  Home,
+  Shield,
+  Gift,
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { createOrder, validateCoupon } from '@/lib/checkout';
 import { useCartStore } from '@/hooks/cartStore';
@@ -165,48 +170,75 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
 
   if (!isLoaded || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+            <Loader2 className="w-8 h-8 animate-spin text-white" />
+          </div>
+          <p className="text-gray-600 font-medium">Đang tải thông tin thanh toán...</p>
+        </div>
       </div>
     );
   }
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        <ShoppingCart className="w-16 h-16 text-gray-400 mb-4" />
-        <h1 className="text-2xl font-semibold text-gray-700 mb-2">Giỏ hàng trống</h1>
-        <p className="text-gray-500 mb-6">Hãy thêm sách vào giỏ hàng để tiếp tục thanh toán</p>
-        <Button asChild>
-          <Link href="/books">Khám phá sách</Link>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col items-center justify-center px-4">
+        <div className="w-32 h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl flex items-center justify-center mb-6">
+          <ShoppingCart className="w-16 h-16 text-gray-400" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-800 mb-3">Giỏ hàng trống</h1>
+        <p className="text-gray-600 mb-8 text-center max-w-md">Hãy thêm những cuốn sách yêu thích vào giỏ hàng để tiếp tục hành trình mua sắm nhé!</p>
+        <Button asChild className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+          <Link href="/books">
+            <Sparkles className="w-5 h-5 mr-2" />
+            Khám phá sách hay
+          </Link>
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Thanh toán</h1>
-          <p className="text-gray-600 mt-2">Hoàn tất đơn hàng của bạn</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <ShoppingCart className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold mb-3">Thanh toán đơn hàng</h1>
+            <p className="text-xl text-blue-100">Hoàn tất bước cuối để sở hữu những cuốn sách tuyệt vời</p>
+          </div>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-8">
             {/* Shipping Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  Địa chỉ giao hàng
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">Địa chỉ giao hàng</h3>
+                    <p className="text-blue-100">Chọn nơi bạn muốn nhận sách</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-8 space-y-6">
                 {savedAddresses.length > 0 && (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">Chọn địa chỉ có sẵn</Label>
+                  <div className="space-y-4">
+                    <Label className="text-lg font-medium text-gray-800 flex items-center gap-2">
+                      <Home className="w-5 h-5" />
+                      Chọn địa chỉ có sẵn
+                    </Label>
                     <RadioGroup
                       value={useNewAddress ? 'new' : selectedAddressId?.toString()}
                       onValueChange={(value) => {
@@ -218,28 +250,44 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                           setSelectedAddressId(parseInt(value));
                         }
                       }}
+                      className="space-y-4"
                     >
                       {savedAddresses.map((address) => (
-                        <div key={address.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                          <RadioGroupItem value={address.id.toString()} id={`address-${address.id}`} className="mt-1" />
-                          <div className="flex-1">
-                            <Label htmlFor={`address-${address.id}`} className="cursor-pointer">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium">{address.fullName}</span>
-                                {address.isDefault && <Badge variant="secondary">Mặc định</Badge>}
-                              </div>
-                              <p className="text-sm text-gray-600">
-                                {address.address}, {address.ward && `${address.ward}, `}
-                                {address.district}, {address.city}
-                              </p>
-                              <p className="text-sm text-gray-600">{address.phone}</p>
-                            </Label>
+                        <div key={address.id} className="group">
+                          <div className="flex items-start space-x-4 p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer">
+                            <RadioGroupItem 
+                              value={address.id.toString()} 
+                              id={`address-${address.id}`} 
+                              className="mt-1 w-5 h-5" 
+                            />
+                            <div className="flex-1">
+                              <Label htmlFor={`address-${address.id}`} className="cursor-pointer block">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="text-lg font-semibold text-gray-900">{address.fullName}</span>
+                                  {address.isDefault && (
+                                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                                      <Check className="w-3 h-3 mr-1" />
+                                      Mặc định
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-gray-600 mb-1">
+                                  📍 {address.address}, {address.ward && `${address.ward}, `}
+                                  {address.district}, {address.city}
+                                </p>
+                                <p className="text-gray-600">📞 {address.phone}</p>
+                              </Label>
+                            </div>
                           </div>
                         </div>
                       ))}
-                      <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                        <RadioGroupItem value="new" id="address-new" />
-                        <Label htmlFor="address-new" className="cursor-pointer font-medium">
+                      
+                      <div className="flex items-center space-x-4 p-6 border-2 border-dashed border-gray-300 rounded-2xl hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer">
+                        <RadioGroupItem value="new" id="address-new" className="w-5 h-5" />
+                        <Label htmlFor="address-new" className="cursor-pointer flex items-center gap-3 text-lg font-medium text-gray-700">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-sm">+</span>
+                          </div>
                           Sử dụng địa chỉ mới
                         </Label>
                       </div>
@@ -248,201 +296,263 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                 )}
 
                 {(useNewAddress || savedAddresses.length === 0) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName" className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        Họ và tên *
-                      </Label>
-                      <Input
-                        id="fullName"
-                        value={checkoutData.customerInfo.fullName}
-                        onChange={(e) => updateField('fullName', e.target.value)}
-                        placeholder="Nhập họ và tên"
-                        className={formErrors.fullName ? 'border-red-500' : ''}
-                      />
-                      {formErrors.fullName && <p className="text-sm text-red-500">{formErrors.fullName}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="phone" className="flex items-center gap-1">
-                        <Phone className="w-4 h-4" />
-                        Số điện thoại *
-                      </Label>
-                      <Input
-                        id="phone"
-                        value={checkoutData.customerInfo.phone}
-                        onChange={(e) => updateField('phone', e.target.value)}
-                        placeholder="Nhập số điện thoại"
-                        className={formErrors.phone ? 'border-red-500' : ''}
-                      />
-                      {formErrors.phone && <p className="text-sm text-red-500">{formErrors.phone}</p>}
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="email" className="flex items-center gap-1">
-                        <Mail className="w-4 h-4" />
-                        Email *
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={checkoutData.customerInfo.email}
-                        onChange={(e) => updateField('email', e.target.value)}
-                        placeholder="Nhập email"
-                        className={formErrors.email ? 'border-red-500' : ''}
-                      />
-                      {formErrors.email && <p className="text-sm text-red-500">{formErrors.email}</p>}
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="address">Địa chỉ cụ thể *</Label>
-                      <Input
-                        id="address"
-                        value={checkoutData.customerInfo.address}
-                        onChange={(e) => updateField('address', e.target.value)}
-                        placeholder="Số nhà, tên đường"
-                        className={formErrors.address ? 'border-red-500' : ''}
-                      />
-                      {formErrors.address && <p className="text-sm text-red-500">{formErrors.address}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Tỉnh/Thành phố *</Label>
-                      <Input
-                        id="city"
-                        value={checkoutData.customerInfo.city}
-                        onChange={(e) => updateField('city', e.target.value)}
-                        placeholder="Tỉnh/Thành phố"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="district">Quận/Huyện *</Label>
-                      <Input
-                        id="district"
-                        value={checkoutData.customerInfo.district}
-                        onChange={(e) => updateField('district', e.target.value)}
-                        placeholder="Quận/Huyện"
-                        className={formErrors.district ? 'border-red-500' : ''}
-                      />
-                      {formErrors.district && <p className="text-sm text-red-500">{formErrors.district}</p>}
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="ward">Phường/Xã</Label>
-                      <Input
-                        id="ward"
-                        value={checkoutData.customerInfo.ward}
-                        onChange={(e) => updateField('ward', e.target.value)}
-                        placeholder="Phường/Xã (tùy chọn)"
-                      />
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="notes">Ghi chú</Label>
-                      <Textarea
-                        id="notes"
-                        value={checkoutData.customerInfo.notes}
-                        onChange={(e) => updateField('notes', e.target.value)}
-                        placeholder="Ghi chú cho đơn hàng (tùy chọn)"
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="saveAddress"
-                          checked={checkoutData.saveAddress}
-                          onCheckedChange={(checked) => updateSaveAddress(!!checked)}
-                        />
-                        <Label htmlFor="saveAddress" className="text-sm">
-                          Lưu địa chỉ này cho lần mua hàng tiếp theo
+                  <div className="space-y-6 mt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                    <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                      <User className="w-5 h-5" />
+                      Thông tin giao hàng
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label htmlFor="fullName" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <User className="w-4 h-4" />
+                          Họ và tên *
                         </Label>
+                        <Input
+                          id="fullName"
+                          value={checkoutData.customerInfo.fullName}
+                          onChange={(e) => updateField('fullName', e.target.value)}
+                          placeholder="Nhập họ và tên"
+                          className={`h-12 rounded-xl border-2 ${formErrors.fullName ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                        />
+                        {formErrors.fullName && <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          {formErrors.fullName}
+                        </p>}
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Phone className="w-4 h-4" />
+                          Số điện thoại *
+                        </Label>
+                        <Input
+                          id="phone"
+                          value={checkoutData.customerInfo.phone}
+                          onChange={(e) => updateField('phone', e.target.value)}
+                          placeholder="Nhập số điện thoại"
+                          className={`h-12 rounded-xl border-2 ${formErrors.phone ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                        />
+                        {formErrors.phone && <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          {formErrors.phone}
+                        </p>}
+                      </div>
+
+                      <div className="space-y-3 md:col-span-2">
+                        <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <Mail className="w-4 h-4" />
+                          Email *
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={checkoutData.customerInfo.email}
+                          onChange={(e) => updateField('email', e.target.value)}
+                          placeholder="Nhập email"
+                          className={`h-12 rounded-xl border-2 ${formErrors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                        />
+                        {formErrors.email && <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          {formErrors.email}
+                        </p>}
+                      </div>
+
+                      <div className="space-y-3 md:col-span-2">
+                        <Label htmlFor="address" className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                          <MapPin className="w-4 h-4" />
+                          Địa chỉ cụ thể *
+                        </Label>
+                        <Input
+                          id="address"
+                          value={checkoutData.customerInfo.address}
+                          onChange={(e) => updateField('address', e.target.value)}
+                          placeholder="Số nhà, tên đường"
+                          className={`h-12 rounded-xl border-2 ${formErrors.address ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                        />
+                        {formErrors.address && <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          {formErrors.address}
+                        </p>}
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label htmlFor="city" className="text-sm font-medium text-gray-700">Tỉnh/Thành phố *</Label>
+                        <Input
+                          id="city"
+                          value={checkoutData.customerInfo.city}
+                          onChange={(e) => updateField('city', e.target.value)}
+                          placeholder="Tỉnh/Thành phố"
+                          className="h-12 rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label htmlFor="district" className="text-sm font-medium text-gray-700">Quận/Huyện *</Label>
+                        <Input
+                          id="district"
+                          value={checkoutData.customerInfo.district}
+                          onChange={(e) => updateField('district', e.target.value)}
+                          placeholder="Quận/Huyện"
+                          className={`h-12 rounded-xl border-2 ${formErrors.district ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                        />
+                        {formErrors.district && <p className="text-sm text-red-500 flex items-center gap-1">
+                          <AlertCircle className="w-4 h-4" />
+                          {formErrors.district}
+                        </p>}
+                      </div>
+
+                      <div className="space-y-3 md:col-span-2">
+                        <Label htmlFor="ward" className="text-sm font-medium text-gray-700">Phường/Xã</Label>
+                        <Input
+                          id="ward"
+                          value={checkoutData.customerInfo.ward}
+                          onChange={(e) => updateField('ward', e.target.value)}
+                          placeholder="Phường/Xã (tùy chọn)"
+                          className="h-12 rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-3 md:col-span-2">
+                        <Label htmlFor="notes" className="text-sm font-medium text-gray-700">Ghi chú</Label>
+                        <Textarea
+                          id="notes"
+                          value={checkoutData.customerInfo.notes}
+                          onChange={(e) => updateField('notes', e.target.value)}
+                          placeholder="Ghi chú cho đơn hàng (tùy chọn)"
+                          rows={4}
+                          className="rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-colors resize-none"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <div className="flex items-center space-x-3 p-4 bg-white rounded-xl border border-gray-200">
+                          <Checkbox
+                            id="saveAddress"
+                            checked={checkoutData.saveAddress}
+                            onCheckedChange={(checked) => updateSaveAddress(!!checked)}
+                            className="w-5 h-5"
+                          />
+                          <Label htmlFor="saveAddress" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <Shield className="w-4 h-4" />
+                            Lưu địa chỉ này cho lần mua hàng tiếp theo
+                          </Label>
+                        </div>
                       </div>
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Payment Method */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Phương thức thanh toán
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup value={checkoutData.paymentMethod} onValueChange={handlePaymentMethodChange}>
-                  <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                    <RadioGroupItem value="COD" id="cod" />
-                    <Label htmlFor="cod" className="cursor-pointer flex-1">
-                      <div className="flex items-center gap-2">
-                        <Truck className="w-4 h-4" />
-                        <span className="font-medium">Thanh toán khi nhận hàng (COD)</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">Thanh toán bằng tiền mặt khi nhận hàng</p>
-                    </Label>
+            <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">Phương thức thanh toán</h3>
+                    <p className="text-green-100">Chọn cách thức thanh toán phù hợp</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-8">
+                <RadioGroup value={checkoutData.paymentMethod} onValueChange={handlePaymentMethodChange} className="space-y-4">
+                  <div className="relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                    <div className="flex items-center space-x-4">
+                      <RadioGroupItem value="COD" id="cod" className="w-5 h-5" />
+                      <Label htmlFor="cod" className="cursor-pointer flex-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                              <Truck className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                              <span className="text-lg font-semibold text-gray-900">Thanh toán khi nhận hàng (COD)</span>
+                              <p className="text-sm text-gray-600 mt-1">Thanh toán bằng tiền mặt khi nhận hàng</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+                            Phổ biến
+                          </Badge>
+                        </div>
+                      </Label>
+                    </div>
                   </div>
 
-                  <div className="flex items-center space-x-3 p-3 border rounded-lg">
-                    <RadioGroupItem value="BANKING" id="banking" />
-                    <Label htmlFor="banking" className="cursor-pointer flex-1">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4" />
-                        <span className="font-medium">Chuyển khoản ngân hàng</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">Chuyển khoản qua tài khoản ngân hàng</p>
-                    </Label>
+                  <div className="relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                    <div className="flex items-center space-x-4">
+                      <RadioGroupItem value="BANKING" id="banking" className="w-5 h-5" />
+                      <Label htmlFor="banking" className="cursor-pointer flex-1">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                            <CreditCard className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <span className="text-lg font-semibold text-gray-900">Chuyển khoản ngân hàng</span>
+                            <p className="text-sm text-gray-600 mt-1">Chuyển khoản qua tài khoản ngân hàng</p>
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
                   </div>
                 </RadioGroup>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Coupon */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Tag className="w-5 h-5" />
-                  Mã giảm giá
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-3">
-                  <Input
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="Nhập mã giảm giá"
-                    className="flex-1"
-                  />
+            <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                    <Gift className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">Mã giảm giá</h3>
+                    <p className="text-purple-100">Nhời mã để được ưu đãi đặc biệt</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-8">
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="Nhập mã giảm giá"
+                      className="h-12 rounded-xl border-2 border-gray-200 focus:border-purple-500 transition-colors"
+                    />
+                  </div>
                   <Button
                     onClick={() => validateCouponCode(couponCode, orderSummary?.subtotal || 0)}
                     disabled={couponLoading || !couponCode.trim()}
-                    variant="outline"
+                    className="h-12 px-8 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                   >
-                    {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Áp dụng'}
+                    {couponLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Áp dụng'}
                   </Button>
                 </div>
+                
                 {couponError && (
-                  <Alert className="mt-3" variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{couponError}</AlertDescription>
+                  <Alert className="mt-4 border-red-200 bg-red-50 rounded-xl">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                    <AlertDescription className="text-red-700">{couponError}</AlertDescription>
                   </Alert>
                 )}
+                
                 {couponDiscount > 0 && (
-                  <Alert className="mt-3">
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Mã giảm giá đã được áp dụng! Bạn tiết kiệm được {formatVND(couponDiscount)}
+                  <Alert className="mt-4 border-green-200 bg-green-50 rounded-xl">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <AlertDescription className="text-green-700">
+                      🎉 Mã giảm giá đã được áp dụng! Bạn tiết kiệm được <span className="font-semibold">{formatVND(couponDiscount)}</span>
                     </AlertDescription>
                   </Alert>
                 )}
-              </CardContent>
-            </Card>
-
+              </div>
+            </div>
             {/* Submit Error */}
             {formErrors.submit && (
               <Alert className="mt-3" variant="destructive">
@@ -452,122 +562,127 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
             )}
           </div>
 
-          {/* Order Summary Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5" />
-                  Đơn hàng của bạn
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Cart Items */}
-                <div className="space-y-3">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex gap-3">
-                      <div className="relative">
-                        <Image
-                          src={item.book.coverUrl}
-                          alt={item.book.title}
-                          width={60}
-                          height={80}
-                          className="object-cover rounded"
-                        />
-                        <Badge className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 flex items-center justify-center p-1">
-                          {item.quantity}
-                        </Badge>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">{item.book.title}</h4>
-                        <p className="text-xs text-gray-500 mb-1">
-                          {item.version === 'color' ? 'Bản màu' : 'Bản photo'}
-                        </p>
-                        <p className="font-medium text-sm">{formatVND(calculateItemPrice(item))}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                {/* Order Totals */}
-                {orderSummary && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>Tạm tính</span>
-                      <span>{formatVND(orderSummary.subtotal)}</span>
-                    </div>
-
-                    <div className="flex justify-between text-sm">
-                      <span>Phí vận chuyển</span>
-                      <span>
-                        {orderSummary.shippingFee === 0 ? (
-                          <span className="text-green-600">Miễn phí</span>
-                        ) : (
-                          formatVND(orderSummary.shippingFee)
-                        )}
-                      </span>
-                    </div>
-
-                    {orderSummary.couponDiscount > 0 && (
-                      <div className="flex justify-between text-sm text-green-600">
-                        <span>Giảm giá</span>
-                        <span>-{formatVND(orderSummary.couponDiscount)}</span>
-                      </div>
-                    )}
-
-                    <Separator />
-
-                    <div className="flex justify-between font-semibold text-lg">
-                      <span>Tổng cộng</span>
-                      <span className="text-red-600">{formatVND(orderSummary.total)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Free Shipping Notice */}
-                {orderSummary && orderSummary.subtotal < 500000 && (
-                  <Alert>
-                    <Truck className="h-4 w-4" />
-                    <AlertDescription>
-                      Mua thêm {formatVND(500000 - orderSummary.subtotal)} để được miễn phí vận chuyển
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Place Order Button */}
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3"
-                  size="lg"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Đang xử lý...
-                    </>
-                  ) : (
-                    `Đặt hàng • ${orderSummary ? formatVND(orderSummary.total) : ''}`
-                  )}
-                </Button>
-
-                <p className="text-xs text-gray-500 text-center">
-                  Bằng việc đặt hàng, bạn đồng ý với{' '}
-                  <Link href="/terms" className="underline">
-                    Điều khoản dịch vụ
-                  </Link>{' '}
-                  và{' '}
-                  <Link href="/privacy" className="underline">
-                    Chính sách bảo mật
-                  </Link>
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+{/* Order Summary Sidebar */}
+<div className="lg:col-span-1">
+  <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden sticky top-4">
+    <div className="bg-gradient-to-r from-red-500 to-pink-600 p-6">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+          <ShoppingCart className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold text-white">Đơn hàng của bạn</h3>
+          <p className="text-red-100">Tổng quan các sản phẩm và chi phí</p>
         </div>
       </div>
+    </div>
+
+    <div className="p-8 space-y-6">
+      {/* Cart Items */}
+      <div className="space-y-4">
+        {cartItems.map((item) => (
+          <div key={item.id} className="flex gap-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:shadow-md transition-all duration-200">
+            <div className="relative">
+              <Image
+                src={item.book.coverUrl}
+                alt={item.book.title}
+                width={60}
+                height={80}
+                className="object-cover rounded-lg"
+              />
+              <Badge className="absolute -top-2 -right-2 min-w-[1.5rem] h-6 flex items-center justify-center p-1 bg-gradient-to-r from-red-500 to-pink-500 text-white">
+                {item.quantity}
+              </Badge>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-base text-gray-900 truncate">{item.book.title}</h4>
+              <p className="text-sm text-gray-600 mb-1">
+                {item.version === 'color' ? 'Bản màu' : 'Bản photo'}
+              </p>
+              <p className="font-semibold text-base text-red-600">{formatVND(calculateItemPrice(item))}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Separator className="bg-blue-200" />
+
+      {/* Order Totals */}
+      {orderSummary && (
+        <div className="space-y-4">
+          <div className="flex justify-between text-base text-gray-700">
+            <span className="font-medium">Tạm tính</span>
+            <span>{formatVND(orderSummary.subtotal)}</span>
+          </div>
+
+          <div className="flex justify-between text-base text-gray-700">
+            <span className="font-medium">Phí vận chuyển</span>
+            <span>
+              {orderSummary.shippingFee === 0 ? (
+                <span className="text-green-600 font-medium">Miễn phí</span>
+              ) : (
+                formatVND(orderSummary.shippingFee)
+              )}
+            </span>
+          </div>
+
+          {orderSummary.couponDiscount > 0 && (
+            <div className="flex justify-between text-base text-green-600">
+              <span className="font-medium">Giảm giá</span>
+              <span>-{formatVND(orderSummary.couponDiscount)}</span>
+            </div>
+          )}
+
+          <Separator className="bg-blue-200" />
+
+          <div className="flex justify-between font-bold text-xl text-gray-900">
+            <span>Tổng cộng</span>
+            <span className="text-red-600">{formatVND(orderSummary.total)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Free Shipping Notice */}
+      {orderSummary && orderSummary.subtotal < 500000 && (
+        <Alert className="border-blue-200 bg-blue-50 rounded-xl">
+          <Truck className="h-5 w-5 text-blue-500" />
+          <AlertDescription className="text-blue-700">
+            Mua thêm <span className="font-semibold">{formatVND(500000 - orderSummary.subtotal)}</span> để được miễn phí vận chuyển
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Place Order Button */}
+      <Button
+        onClick={handleSubmit}
+        disabled={isLoading}
+        className="w-full h-12 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+            Đang xử lý...
+          </>
+        ) : (
+          `Đặt hàng • ${orderSummary ? formatVND(orderSummary.total) : ''}`
+        )}
+      </Button>
+
+      <p className="text-sm text-gray-600 text-center">
+        Bằng việc đặt hàng, bạn đồng ý với{' '}
+        <Link href="/terms" className="underline text-blue-600 hover:text-blue-800">
+          Điều khoản dịch vụ
+        </Link>{' '}
+        và{' '}
+        <Link href="/privacy" className="underline text-blue-600 hover:text-blue-800">
+          Chính sách bảo mật
+        </Link>
+      </p>
+    </div>
+  </div>
+</div>
+</div>
+</div>
     </div>
   );
 };
