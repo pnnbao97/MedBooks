@@ -1,3 +1,4 @@
+// components/CheckoutClient.tsx
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
@@ -27,79 +28,35 @@ import {
   Mail,
   User
 } from 'lucide-react';
-import { 
-  validateCoupon, 
-  createOrder
-} from '@/lib/checkout';
+import { createOrder, validateCoupon } from '@/lib/checkout';
+import { useCartStore } from '@/hooks/cartStore';
+import { useCheckoutForm, FormErrors } from '@/hooks/useCheckoutForm';
+import { useCouponValidation } from '@/hooks/useCouponValidation';
 import type { CartItemWithBook, CheckoutData, OrderSummary, ShippingAddress } from '@/lib/checkout';
+import { calculateItemPrice, calculateOrderSummary } from '@/lib/pricing';
+import { formatVND } from '@/lib/utils/currency';
 
 interface CheckoutClientProps {
-  cartItems: CartItemWithBook[];
+  userId: string;
   savedAddresses: ShippingAddress[];
 }
 
-// Fix: Move formatVND function to client-side
-const formatVND = (amount: number): string => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount);
-};
+type PaymentMethod = 'COD' | 'BANKING';
 
-  // Fix: Calculate item price consistently
-  const calculateItemPrice = (item: CartItemWithBook): number => {
-    const basePrice = item.version === 'color' 
-      ? (item.book.hasColorSale 
-          ? (item.book.colorPrice - item.book.colorSaleAmount) * 1000
-          : item.book.colorPrice * 1000)
-      : item.book.photoPrice * 1000;
-    
-    return basePrice * item.quantity;
-  };
-  
-// Calculate order summary
-export function calculateOrderSummary(
-  items: CartItemWithBook[], 
-  couponDiscount: number = 0
-): OrderSummary {
-  const subtotal = items.reduce((sum, item) => sum + calculateItemPrice(item), 0);
-  const shippingFee = subtotal > 500000 ? 0 : 30000;
-  const total = Math.max(0, subtotal + shippingFee - couponDiscount);
-
-  return {
-    subtotal,
-    shippingFee,
-    couponDiscount,
-    total,
-    items
-  };
-}
-
-const CheckoutClient = ({ cartItems: initialCartItems, savedAddresses: initialSavedAddresses }: CheckoutClientProps) => {
+const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: CheckoutClientProps) => {
   const { user, isLoaded } = useUser();
   const router = useRouter();
-  
-  // State management
-  const [cartItems, setCartItems] = useState<CartItemWithBook[]>(initialCartItems);
+  const { items: cartItems, fetchCart } = useCartStore();
   const [savedAddresses, setSavedAddresses] = useState<ShippingAddress[]>(initialSavedAddresses);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
-    initialSavedAddresses.find(addr => addr.isDefault)?.id || 
-    (initialSavedAddresses.length > 0 ? initialSavedAddresses[0].id : null)
+    initialSavedAddresses.find((addr) => addr.isDefault)?.id ||
+      (initialSavedAddresses.length > 0 ? initialSavedAddresses[0].id : null),
   );
   const [useNewAddress, setUseNewAddress] = useState(initialSavedAddresses.length === 0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [couponCode, setCouponCode] = useState('');
-  const [couponDiscount, setCouponDiscount] = useState(0);
-  const [couponError, setCouponError] = useState('');
-  const [couponLoading, setCouponLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Form data
-  const [checkoutData, setCheckoutData] = useState<CheckoutData>({
+  // Initialize checkout form
+  const initialCheckoutData: CheckoutData = {
     customerInfo: {
       fullName: user?.fullName || '',
       email: user?.primaryEmailAddress?.emailAddress || '',
@@ -108,11 +65,39 @@ const CheckoutClient = ({ cartItems: initialCartItems, savedAddresses: initialSa
       city: 'Hồ Chí Minh',
       district: '',
       ward: '',
-      notes: ''
+      notes: '',
     },
     paymentMethod: 'COD',
-    saveAddress: false
-  });
+    saveAddress: false,
+  };
+
+  const {
+    formData: checkoutData,
+    errors: formErrors,
+    validateForm,
+    updateField,
+    updatePaymentMethod,
+    updateSaveAddress,
+    setSubmitError,
+  } = useCheckoutForm(initialCheckoutData);
+
+  const { couponCode, setCouponCode, couponDiscount, couponError, couponLoading, validateCouponCode } =
+    useCouponValidation();
+
+  // Fetch cart items on mount
+  useEffect(() => {
+    const loadCart = async () => {
+      setIsLoading(true);
+      try {
+        await fetchCart();
+      } catch (error) {
+        console.error('Failed to fetch cart:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadCart();
+  }, [fetchCart]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -121,153 +106,62 @@ const CheckoutClient = ({ cartItems: initialCartItems, savedAddresses: initialSa
     }
   }, [user, isLoaded, router]);
 
-  
-const orderSummary = useMemo(() => {
-  if (cartItems.length > 0) {
-    return calculateOrderSummary(cartItems, couponDiscount);
-  }
-  return null;
-}, [cartItems, couponDiscount]);
-
   // Load saved address data
   useEffect(() => {
     if (savedAddresses.length > 0 && !useNewAddress && selectedAddressId) {
-      const address = savedAddresses.find(addr => addr.id === selectedAddressId);
+      const address = savedAddresses.find((addr) => addr.id === selectedAddressId);
       if (address) {
-        setCheckoutData(prev => ({
-          ...prev,
-          customerInfo: {
-            ...prev.customerInfo,
-            fullName: address.fullName,
-            phone: address.phone,
-            email: address.email,
-            address: address.address,
-            city: address.city,
-            district: address.district,
-            ward: address.ward || ''
-          }
-        }));
+        updateField('fullName', address.fullName);
+        updateField('phone', address.phone);
+        updateField('email', address.email);
+        updateField('address', address.address);
+        updateField('city', address.city);
+        updateField('district', address.district);
+        updateField('ward', address.ward || '');
       }
     } else if (useNewAddress) {
-      setCheckoutData(prev => ({
-        ...prev,
-        customerInfo: {
-          ...prev.customerInfo,
-          fullName: user?.fullName || '',
-          email: user?.primaryEmailAddress?.emailAddress || '',
-          phone: '',
-          address: '',
-          district: '',
-          ward: '',
-          notes: ''
-        }
-      }));
+      updateField('fullName', user?.fullName || '');
+      updateField('email', user?.primaryEmailAddress?.emailAddress || '');
+      updateField('phone', '');
+      updateField('address', '');
+      updateField('district', '');
+      updateField('ward', '');
+      updateField('notes', '');
     }
-  }, [selectedAddressId, useNewAddress, savedAddresses, user]);
+  }, [selectedAddressId, useNewAddress, savedAddresses, user, updateField]);
 
-  // Fix: Handle coupon validation with proper error handling
-  const handleCouponValidation = async () => {
-    if (!couponCode.trim() || !orderSummary) return;
-    
-    setCouponLoading(true);
-    setCouponError('');
-    
-    try {
-      const result = await validateCoupon(couponCode, orderSummary.subtotal);
-      if (result.valid && result.discountAmount) {
-        setCouponDiscount(result.discountAmount);
-        setCouponError('');
-      } else {
-        setCouponError(result.error || 'Mã giảm giá không hợp lệ');
-        setCouponDiscount(0);
-      }
-    } catch (error) {
-      setCouponError('Có lỗi xảy ra khi kiểm tra mã giảm giá');
-      setCouponDiscount(0);
-    } finally {
-      setCouponLoading(false);
+  const orderSummary = useMemo(() => {
+    if (cartItems.length > 0) {
+      return calculateOrderSummary(cartItems, couponDiscount);
     }
-  };
-
-  // Form validation
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-    
-    if (!checkoutData.customerInfo.fullName.trim()) {
-      errors.fullName = 'Vui lòng nhập họ tên';
-    }
-    
-    if (!checkoutData.customerInfo.email.trim()) {
-      errors.email = 'Vui lòng nhập email';
-    } else if (!/\S+@\S+\.\S+/.test(checkoutData.customerInfo.email)) {
-      errors.email = 'Email không hợp lệ';
-    }
-    
-    if (!checkoutData.customerInfo.phone.trim()) {
-      errors.phone = 'Vui lòng nhập số điện thoại';
-    } else if (!/^[0-9]{10,11}$/.test(checkoutData.customerInfo.phone.replace(/\D/g, ''))) {
-      errors.phone = 'Số điện thoại không hợp lệ';
-    }
-    
-    if (!checkoutData.customerInfo.address.trim()) {
-      errors.address = 'Vui lòng nhập địa chỉ';
-    }
-    
-    if (!checkoutData.customerInfo.district.trim()) {
-      errors.district = 'Vui lòng chọn quận/huyện';
-    }
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    return null;
+  }, [cartItems, couponDiscount]);
 
   // Handle form submission
   const handleSubmit = async () => {
     if (!validateForm() || !orderSummary || !user?.id) return;
-    
-    setIsSubmitting(true);
-    
+
     try {
       let couponData;
-      if (couponDiscount > 0) {
+      if (couponDiscount > 0 && couponCode) {
         const result = await validateCoupon(couponCode, orderSummary.subtotal);
         couponData = result.coupon;
       }
-      
+
       const order = await createOrder(user.id, checkoutData, orderSummary, couponData);
       router.push(`/checkout/success?order=${order.orderNumber}`);
     } catch (error) {
       console.error('Order creation failed:', error);
-      setCouponError('Có lỗi xảy ra khi tạo đơn hàng');
-    } finally {
-      setIsSubmitting(false);
+      setSubmitError('Không thể tạo đơn hàng. Vui lòng thử lại.');
     }
   };
 
-  // Handle input changes
-  const handleInputChange = (field: keyof CheckoutData['customerInfo'], value: string) => {
-    setCheckoutData(prev => ({
-      ...prev,
-      customerInfo: {
-        ...prev.customerInfo,
-        [field]: value
-      }
-    }));
-    
-    if (formErrors[field]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+  // Handle payment method change
+  const handlePaymentMethodChange = (value: string) => {
+    if (value === 'COD' || value === 'BANKING') {
+      updatePaymentMethod(value as PaymentMethod);
     }
   };
-
-  // Handle checkbox change
-  const handleCheckboxChange = (checked: boolean) => {
-    setCheckoutData(prev => ({ ...prev, saveAddress: checked }));
-  };
-
-
 
   if (!isLoaded || isLoading) {
     return (
@@ -335,7 +229,8 @@ const orderSummary = useMemo(() => {
                                 {address.isDefault && <Badge variant="secondary">Mặc định</Badge>}
                               </div>
                               <p className="text-sm text-gray-600">
-                                {address.address}, {address.ward && `${address.ward}, `}{address.district}, {address.city}
+                                {address.address}, {address.ward && `${address.ward}, `}
+                                {address.district}, {address.city}
                               </p>
                               <p className="text-sm text-gray-600">{address.phone}</p>
                             </Label>
@@ -362,13 +257,11 @@ const orderSummary = useMemo(() => {
                       <Input
                         id="fullName"
                         value={checkoutData.customerInfo.fullName}
-                        onChange={(e) => handleInputChange('fullName', e.target.value)}
+                        onChange={(e) => updateField('fullName', e.target.value)}
                         placeholder="Nhập họ và tên"
                         className={formErrors.fullName ? 'border-red-500' : ''}
                       />
-                      {formErrors.fullName && (
-                        <p className="text-sm text-red-500">{formErrors.fullName}</p>
-                      )}
+                      {formErrors.fullName && <p className="text-sm text-red-500">{formErrors.fullName}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -379,13 +272,11 @@ const orderSummary = useMemo(() => {
                       <Input
                         id="phone"
                         value={checkoutData.customerInfo.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        onChange={(e) => updateField('phone', e.target.value)}
                         placeholder="Nhập số điện thoại"
                         className={formErrors.phone ? 'border-red-500' : ''}
                       />
-                      {formErrors.phone && (
-                        <p className="text-sm text-red-500">{formErrors.phone}</p>
-                      )}
+                      {formErrors.phone && <p className="text-sm text-red-500">{formErrors.phone}</p>}
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -397,13 +288,11 @@ const orderSummary = useMemo(() => {
                         id="email"
                         type="email"
                         value={checkoutData.customerInfo.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        onChange={(e) => updateField('email', e.target.value)}
                         placeholder="Nhập email"
                         className={formErrors.email ? 'border-red-500' : ''}
                       />
-                      {formErrors.email && (
-                        <p className="text-sm text-red-500">{formErrors.email}</p>
-                      )}
+                      {formErrors.email && <p className="text-sm text-red-500">{formErrors.email}</p>}
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -411,13 +300,11 @@ const orderSummary = useMemo(() => {
                       <Input
                         id="address"
                         value={checkoutData.customerInfo.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        onChange={(e) => updateField('address', e.target.value)}
                         placeholder="Số nhà, tên đường"
                         className={formErrors.address ? 'border-red-500' : ''}
                       />
-                      {formErrors.address && (
-                        <p className="text-sm text-red-500">{formErrors.address}</p>
-                      )}
+                      {formErrors.address && <p className="text-sm text-red-500">{formErrors.address}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -425,7 +312,7 @@ const orderSummary = useMemo(() => {
                       <Input
                         id="city"
                         value={checkoutData.customerInfo.city}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        onChange={(e) => updateField('city', e.target.value)}
                         placeholder="Tỉnh/Thành phố"
                       />
                     </div>
@@ -435,13 +322,11 @@ const orderSummary = useMemo(() => {
                       <Input
                         id="district"
                         value={checkoutData.customerInfo.district}
-                        onChange={(e) => handleInputChange('district', e.target.value)}
+                        onChange={(e) => updateField('district', e.target.value)}
                         placeholder="Quận/Huyện"
                         className={formErrors.district ? 'border-red-500' : ''}
                       />
-                      {formErrors.district && (
-                        <p className="text-sm text-red-500">{formErrors.district}</p>
-                      )}
+                      {formErrors.district && <p className="text-sm text-red-500">{formErrors.district}</p>}
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -449,7 +334,7 @@ const orderSummary = useMemo(() => {
                       <Input
                         id="ward"
                         value={checkoutData.customerInfo.ward}
-                        onChange={(e) => handleInputChange('ward', e.target.value)}
+                        onChange={(e) => updateField('ward', e.target.value)}
                         placeholder="Phường/Xã (tùy chọn)"
                       />
                     </div>
@@ -459,7 +344,7 @@ const orderSummary = useMemo(() => {
                       <Textarea
                         id="notes"
                         value={checkoutData.customerInfo.notes}
-                        onChange={(e) => handleInputChange('notes', e.target.value)}
+                        onChange={(e) => updateField('notes', e.target.value)}
                         placeholder="Ghi chú cho đơn hàng (tùy chọn)"
                         rows={3}
                       />
@@ -470,7 +355,7 @@ const orderSummary = useMemo(() => {
                         <Checkbox
                           id="saveAddress"
                           checked={checkoutData.saveAddress}
-                          onCheckedChange={handleCheckboxChange}
+                          onCheckedChange={(checked) => updateSaveAddress(!!checked)}
                         />
                         <Label htmlFor="saveAddress" className="text-sm">
                           Lưu địa chỉ này cho lần mua hàng tiếp theo
@@ -491,12 +376,7 @@ const orderSummary = useMemo(() => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup
-                  value={checkoutData.paymentMethod}
-                  onValueChange={(value: 'COD' | 'BANKING') => 
-                    setCheckoutData(prev => ({ ...prev, paymentMethod: value }))
-                  }
-                >
+                <RadioGroup value={checkoutData.paymentMethod} onValueChange={handlePaymentMethodChange}>
                   <div className="flex items-center space-x-3 p-3 border rounded-lg">
                     <RadioGroupItem value="COD" id="cod" />
                     <Label htmlFor="cod" className="cursor-pointer flex-1">
@@ -504,12 +384,10 @@ const orderSummary = useMemo(() => {
                         <Truck className="w-4 h-4" />
                         <span className="font-medium">Thanh toán khi nhận hàng (COD)</span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Thanh toán bằng tiền mặt khi nhận hàng
-                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Thanh toán bằng tiền mặt khi nhận hàng</p>
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3 p-3 border rounded-lg">
                     <RadioGroupItem value="BANKING" id="banking" />
                     <Label htmlFor="banking" className="cursor-pointer flex-1">
@@ -517,9 +395,7 @@ const orderSummary = useMemo(() => {
                         <CreditCard className="w-4 h-4" />
                         <span className="font-medium">Chuyển khoản ngân hàng</span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Chuyển khoản qua tài khoản ngân hàng
-                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Chuyển khoản qua tài khoản ngân hàng</p>
                     </Label>
                   </div>
                 </RadioGroup>
@@ -543,15 +419,11 @@ const orderSummary = useMemo(() => {
                     className="flex-1"
                   />
                   <Button
-                    onClick={handleCouponValidation}
+                    onClick={() => validateCouponCode(couponCode, orderSummary?.subtotal || 0)}
                     disabled={couponLoading || !couponCode.trim()}
                     variant="outline"
                   >
-                    {couponLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      'Áp dụng'
-                    )}
+                    {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Áp dụng'}
                   </Button>
                 </div>
                 {couponError && (
@@ -564,13 +436,20 @@ const orderSummary = useMemo(() => {
                   <Alert className="mt-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Mã giảm giá đã được áp dụng! Bạn tiết kiệm được{' '}
-                      {formatVND(couponDiscount)}
+                      Mã giảm giá đã được áp dụng! Bạn tiết kiệm được {formatVND(couponDiscount)}
                     </AlertDescription>
                   </Alert>
                 )}
               </CardContent>
             </Card>
+
+            {/* Submit Error */}
+            {formErrors.submit && (
+              <Alert className="mt-3" variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{formErrors.submit}</AlertDescription>
+              </Alert>
+            )}
           </div>
 
           {/* Order Summary Sidebar */}
@@ -604,9 +483,7 @@ const orderSummary = useMemo(() => {
                         <p className="text-xs text-gray-500 mb-1">
                           {item.version === 'color' ? 'Bản màu' : 'Bản photo'}
                         </p>
-                        <p className="font-medium text-sm">
-                          {formatVND(calculateItemPrice(item))}
-                        </p>
+                        <p className="font-medium text-sm">{formatVND(calculateItemPrice(item))}</p>
                       </div>
                     </div>
                   ))}
@@ -621,7 +498,7 @@ const orderSummary = useMemo(() => {
                       <span>Tạm tính</span>
                       <span>{formatVND(orderSummary.subtotal)}</span>
                     </div>
-                    
+
                     <div className="flex justify-between text-sm">
                       <span>Phí vận chuyển</span>
                       <span>
@@ -632,21 +509,19 @@ const orderSummary = useMemo(() => {
                         )}
                       </span>
                     </div>
-                    
+
                     {orderSummary.couponDiscount > 0 && (
                       <div className="flex justify-between text-sm text-green-600">
                         <span>Giảm giá</span>
                         <span>-{formatVND(orderSummary.couponDiscount)}</span>
                       </div>
                     )}
-                    
+
                     <Separator />
-                    
+
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Tổng cộng</span>
-                      <span className="text-red-600">
-                        {formatVND(orderSummary.total)}
-                      </span>
+                      <span className="text-red-600">{formatVND(orderSummary.total)}</span>
                     </div>
                   </div>
                 )}
@@ -656,9 +531,7 @@ const orderSummary = useMemo(() => {
                   <Alert>
                     <Truck className="h-4 w-4" />
                     <AlertDescription>
-                      Mua thêm{' '}
-                      {formatVND(500000 - orderSummary.subtotal)}{' '}
-                      để được miễn phí vận chuyển
+                      Mua thêm {formatVND(500000 - orderSummary.subtotal)} để được miễn phí vận chuyển
                     </AlertDescription>
                   </Alert>
                 )}
@@ -666,11 +539,11 @@ const orderSummary = useMemo(() => {
                 {/* Place Order Button */}
                 <Button
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-3"
                   size="lg"
                 >
-                  {isSubmitting ? (
+                  {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       Đang xử lý...
@@ -682,8 +555,13 @@ const orderSummary = useMemo(() => {
 
                 <p className="text-xs text-gray-500 text-center">
                   Bằng việc đặt hàng, bạn đồng ý với{' '}
-                  <Link href="/terms" className="underline">Điều khoản dịch vụ</Link> và{' '}
-                  <Link href="/privacy" className="underline">Chính sách bảo mật</Link>
+                  <Link href="/terms" className="underline">
+                    Điều khoản dịch vụ
+                  </Link>{' '}
+                  và{' '}
+                  <Link href="/privacy" className="underline">
+                    Chính sách bảo mật
+                  </Link>
                 </p>
               </CardContent>
             </Card>

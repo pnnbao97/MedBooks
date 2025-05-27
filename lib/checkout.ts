@@ -1,3 +1,4 @@
+// lib/checkout.ts
 'use server';
 import { db } from '@/database/drizzle';
 import { 
@@ -10,6 +11,8 @@ import {
   users 
 } from '@/database/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
+import { calculateItemPrice } from '@/lib/pricing';
+import { formatVND } from '@/lib/utils/currency'; // Sử dụng hàm từ currency.ts
 
 export interface CartItemWithBook {
   id: number;
@@ -94,18 +97,18 @@ export async function getUserCartItems(clerkId: string): Promise<CartItemWithBoo
           colorSaleAmount: books.colorSaleAmount,
           coverUrl: books.coverUrl,
           availableCopies: books.availableCopies,
-        }
+        },
       })
       .from(carts)
       .innerJoin(books, eq(carts.bookId, books.id))
       .where(eq(carts.userId, clerkId));
 
-    return cartItems.map(item => ({
+    return cartItems.map((item) => ({
       ...item,
       book: {
         ...item.book,
-        coverUrl: item.book.coverUrl ?? ''
-      }
+        coverUrl: item.book.coverUrl ?? '',
+      },
     }));
   } catch (error) {
     console.error('Error fetching cart items:', error);
@@ -113,15 +116,6 @@ export async function getUserCartItems(clerkId: string): Promise<CartItemWithBoo
   }
 }
 
-function calculateItemPrice(item: CartItemWithBook): number {
-  const basePrice = item.version === 'color' 
-    ? (item.book.hasColorSale 
-        ? (item.book.colorPrice - item.book.colorSaleAmount) * 1000
-        : item.book.colorPrice * 1000)
-    : item.book.photoPrice * 1000;
-  
-  return basePrice * item.quantity;
-}
 // Validate coupon
 export async function validateCoupon(code: string, orderAmount: number) {
   try {
@@ -133,8 +127,8 @@ export async function validateCoupon(code: string, orderAmount: number) {
           eq(coupons.code, code.toUpperCase()),
           eq(coupons.isActive, true),
           lte(coupons.validFrom, new Date()),
-          gte(coupons.validTo, new Date())
-        )
+          gte(coupons.validTo, new Date()),
+        ),
       )
       .limit(1);
 
@@ -149,9 +143,9 @@ export async function validateCoupon(code: string, orderAmount: number) {
     }
 
     if (couponData.minOrderAmount && orderAmount < couponData.minOrderAmount) {
-      return { 
-        valid: false, 
-        error: `Đơn hàng tối thiểu ${await formatVND({ amount: couponData.minOrderAmount })} để sử dụng mã này` 
+      return {
+        valid: false,
+        error: `Đơn hàng tối thiểu ${formatVND(couponData.minOrderAmount)} để sử dụng mã này`, // Bỏ await
       };
     }
 
@@ -169,15 +163,13 @@ export async function validateCoupon(code: string, orderAmount: number) {
       valid: true,
       coupon: couponData,
       discountAmount,
-      description: couponData.description || `Giảm ${await formatVND({ amount: discountAmount })}`
+      description: couponData.description || `Giảm ${formatVND(discountAmount)}`,
     };
   } catch (error) {
     console.error('Error validating coupon:', error);
     return { valid: false, error: 'Có lỗi xảy ra khi kiểm tra mã giảm giá' };
   }
 }
-
-
 
 // Generate order number
 function generateOrderNumber(): string {
@@ -186,7 +178,7 @@ function generateOrderNumber(): string {
   return `ORD${timestamp.slice(-8)}${random}`;
 }
 
-// Save shipping address (if requested)
+// Save shipping address
 export async function saveShippingAddress(clerkId: string, addressData: CheckoutData['customerInfo']) {
   try {
     const user = await db
@@ -229,14 +221,31 @@ export async function saveShippingAddress(clerkId: string, addressData: Checkout
   }
 }
 
-// Create order
+// Create order with server-side validation
 export async function createOrder(
-  clerkId: string, 
+  clerkId: string,
   checkoutData: CheckoutData,
   orderSummary: OrderSummary,
-  couponData?: any
+  couponData?: any,
 ) {
   try {
+    // Server-side validation
+    if (!checkoutData.customerInfo.fullName?.trim()) {
+      throw new Error('Thiếu thông tin họ tên');
+    }
+    if (!checkoutData.customerInfo.email?.trim() || !/\S+@\S+\.\S+/.test(checkoutData.customerInfo.email)) {
+      throw new Error('Email không hợp lệ');
+    }
+    if (!checkoutData.customerInfo.phone?.trim() || !/^[0-9]{10,11}$/.test(checkoutData.customerInfo.phone.replace(/\D/g, ''))) {
+      throw new Error('Số điện thoại không hợp lệ');
+    }
+    if (!checkoutData.customerInfo.address?.trim()) {
+      throw new Error('Thiếu thông tin địa chỉ');
+    }
+    if (!checkoutData.customerInfo.district?.trim()) {
+      throw new Error('Thiếu thông tin quận/huyện');
+    }
+
     const user = await db
       .select()
       .from(users)
@@ -281,7 +290,7 @@ export async function createOrder(
         })
         .returning();
 
-      const orderItemsData = orderSummary.items.map(item => ({
+      const orderItemsData = orderSummary.items.map((item) => ({
         orderId: order.id,
         bookId: item.bookId,
         quantity: item.quantity,
@@ -305,8 +314,8 @@ export async function createOrder(
       for (const item of orderSummary.items) {
         await tx
           .update(books)
-          .set({ 
-            availableCopies: Math.max(0, item.book.availableCopies - item.quantity)
+          .set({
+            availableCopies: Math.max(0, item.book.availableCopies - item.quantity),
           })
           .where(eq(books.id, item.bookId));
       }
@@ -344,13 +353,3 @@ export async function getUserShippingAddresses(clerkId: string) {
     throw new Error('Failed to fetch shipping addresses');
   }
 }
-
-// Utility function to format VND
-function formatVND({ amount }: { amount: number; }): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount);
-} 
