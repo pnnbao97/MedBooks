@@ -30,8 +30,12 @@ import {
   Home,
   Shield,
   Gift,
-  Sparkles,
-  Check
+  Stethoscope,
+  Check,
+  Heart,
+  Plus,
+  BookOpen,
+  GraduationCap
 } from 'lucide-react';
 import { createOrder, validateCoupon } from '@/lib/checkout';
 import { useCartStore } from '@/hooks/cartStore';
@@ -170,12 +174,22 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
 
   if (!isLoaded || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-            <Loader2 className="w-8 h-8 animate-spin text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50 flex items-center justify-center">
+        <div className="text-center p-8">
+          <div className="w-24 h-24 bg-slate-200 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-6 mx-auto shadow-lg">
+            {/* <Stethoscope className="w-10 h-10 text-white" /> */}
+            <Image
+                  src="/favicon.ico"
+                  alt="VMedBook Logo"
+                  width={60}
+                  height={60}
+                  className="object-cover" />
           </div>
-          <p className="text-gray-600 font-medium">Đang tải thông tin thanh toán...</p>
+          <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+            <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+          </div>
+          <p className="text-slate-700 font-medium text-lg">Đang tải thông tin thanh toán...</p>
+          <p className="text-slate-500 text-sm mt-2">VMedBook</p>
         </div>
       </div>
     );
@@ -183,16 +197,18 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col items-center justify-center px-4">
-        <div className="w-32 h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl flex items-center justify-center mb-6">
-          <ShoppingCart className="w-16 h-16 text-gray-400" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50 flex flex-col items-center justify-center px-4">
+        <div className="w-32 h-32 bg-gradient-to-br from-slate-200 to-slate-300 rounded-3xl flex items-center justify-center mb-8 shadow-lg">
+          <BookOpen className="w-16 h-16 text-slate-500" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-3">Giỏ hàng trống</h1>
-        <p className="text-gray-600 mb-8 text-center max-w-md">Hãy thêm những cuốn sách yêu thích vào giỏ hàng để tiếp tục hành trình mua sắm nhé!</p>
-        <Button asChild className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+        <h1 className="text-4xl font-bold text-slate-800 mb-4">Giỏ hàng trống</h1>
+        <p className="text-slate-600 mb-8 text-center max-w-lg leading-relaxed">
+          Hãy khám phá bộ sưu tập sách y khoa được chúng tôi dịch thuật và kiểm định kỹ lưỡng.
+        </p>
+        <Button asChild className="bg-gradient-to-r from-teal-600 to-cyan-700 hover:from-teal-700 hover:to-cyan-800 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
           <Link href="/books">
-            <Sparkles className="w-5 h-5 mr-2" />
-            Khám phá sách hay
+            <GraduationCap className="w-5 h-5 mr-2" />
+            Khám phá ngay
           </Link>
         </Button>
       </div>
@@ -200,43 +216,55 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white py-12">
+      <div className="bg-gradient-to-r from-blue-700 via-blue-950 to-slate-800 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <ShoppingCart className="w-10 h-10 text-white" />
+            <div className="w-24 h-24 bg-white/15 backdrop-blur-sm rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl">
+              <div className="relative">
+                <Image
+                  src="/favicon.ico"
+                  alt="VMedBook Logo"
+                  width={60}
+                  height={60}
+                  className="object-cover" />
+                {/* <Heart className="w-12 h-12 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                  <Plus className="w-2 h-2 text-white" />
+                </div> */}
+              </div>
             </div>
-            <h1 className="text-4xl font-bold mb-3">Thanh toán đơn hàng</h1>
-            <p className="text-xl text-blue-100">Hoàn tất bước cuối để sở hữu những cuốn sách tuyệt vời</p>
+            <h1 className="text-5xl font-bold mb-4 tracking-tight">Thanh toán đơn hàng</h1>
+            <p className="text-xl text-teal-100 font-medium">VMedBook - Nền tảng sách  và tài liệu y khoa hàng đầu Việt Nam</p>
+            {/* <p className="text-lg text-cyan-200 mt-2">Hoàn tất bước cuối để sở hữu những cuốn sách được dịch và kiểm định </p> */}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-10">
             {/* Shipping Address */}
-            <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-950 p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-white" />
+                  <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                    <MapPin className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-white">Địa chỉ giao hàng</h3>
-                    <p className="text-blue-100">Chọn nơi bạn muốn nhận sách</p>
+                    <h3 className="text-2xl font-bold text-white">Thông tin giao hàng</h3>
+                    {/* <p className="text-teal-100 font-medium">Địa chỉ nhận sách y khoa chuyên nghiệp</p> */}
                   </div>
                 </div>
               </div>
               
-              <div className="p-8 space-y-6">
+              <div className="p-8 space-y-8">
                 {savedAddresses.length > 0 && (
-                  <div className="space-y-4">
-                    <Label className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                      <Home className="w-5 h-5" />
+                  <div className="space-y-6">
+                    <Label className="text-xl font-semibold text-slate-800 flex items-center gap-3">
+                      <Home className="w-6 h-6 text-teal-600" />
                       Chọn địa chỉ có sẵn
                     </Label>
                     <RadioGroup
@@ -254,39 +282,39 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                     >
                       {savedAddresses.map((address) => (
                         <div key={address.id} className="group">
-                          <div className="flex items-start space-x-4 p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer">
+                          <div className="flex items-start space-x-4 p-6 border-2 border-slate-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all duration-200 cursor-pointer bg-slate-50/50">
                             <RadioGroupItem 
                               value={address.id.toString()} 
                               id={`address-${address.id}`} 
-                              className="mt-1 w-5 h-5" 
+                              className="mt-1 w-5 h-5 border-2 border-teal-500" 
                             />
                             <div className="flex-1">
                               <Label htmlFor={`address-${address.id}`} className="cursor-pointer block">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <span className="text-lg font-semibold text-gray-900">{address.fullName}</span>
+                                <div className="flex items-center gap-3 mb-3">
+                                  <span className="text-lg font-bold text-slate-900">{address.fullName}</span>
                                   {address.isDefault && (
-                                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                                    <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium">
                                       <Check className="w-3 h-3 mr-1" />
                                       Mặc định
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-gray-600 mb-1">
+                                <p className="text-slate-700 mb-2 font-medium">
                                   📍 {address.address}, {address.ward && `${address.ward}, `}
                                   {address.district}, {address.city}
                                 </p>
-                                <p className="text-gray-600">📞 {address.phone}</p>
+                                <p className="text-slate-600 font-medium">📞 {address.phone}</p>
                               </Label>
                             </div>
                           </div>
                         </div>
                       ))}
                       
-                      <div className="flex items-center space-x-4 p-6 border-2 border-dashed border-gray-300 rounded-2xl hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer">
-                        <RadioGroupItem value="new" id="address-new" className="w-5 h-5" />
-                        <Label htmlFor="address-new" className="cursor-pointer flex items-center gap-3 text-lg font-medium text-gray-700">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white text-sm">+</span>
+                      <div className="flex items-center space-x-4 p-6 border-2 border-dashed border-slate-300 rounded-xl hover:border-teal-500 hover:bg-teal-50/50 transition-all duration-200 cursor-pointer">
+                        <RadioGroupItem value="new" id="address-new" className="w-5 h-5 border-2 border-teal-500" />
+                        <Label htmlFor="address-new" className="cursor-pointer flex items-center gap-4 text-lg font-semibold text-slate-700">
+                          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md">
+                            <Plus className="text-white text-lg font-bold" />
                           </div>
                           Sử dụng địa chỉ mới
                         </Label>
@@ -296,16 +324,16 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                 )}
 
                 {(useNewAddress || savedAddresses.length === 0) && (
-                  <div className="space-y-6 mt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
-                    <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                      <User className="w-5 h-5" />
-                      Thông tin giao hàng
+                  <div className="space-y-8 mt-8 p-8 bg-gradient-to-br from-slate-50 to-teal-50 rounded-xl border border-teal-200">
+                    <h4 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                      <User className="w-6 h-6 text-teal-600" />
+                      Thông tin người nhận
                     </h4>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <Label htmlFor="fullName" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                          <User className="w-4 h-4" />
+                        <Label htmlFor="fullName" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                          <User className="w-4 h-4 text-teal-600" />
                           Họ và tên *
                         </Label>
                         <Input
@@ -313,17 +341,17 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                           value={checkoutData.customerInfo.fullName}
                           onChange={(e) => updateField('fullName', e.target.value)}
                           placeholder="Nhập họ và tên"
-                          className={`h-12 rounded-xl border-2 ${formErrors.fullName ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                          className={`h-12 rounded-xl border-2 font-medium ${formErrors.fullName ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-teal-500'} transition-colors bg-white`}
                         />
-                        {formErrors.fullName && <p className="text-sm text-red-500 flex items-center gap-1">
+                        {formErrors.fullName && <p className="text-sm text-red-600 flex items-center gap-1 font-medium">
                           <AlertCircle className="w-4 h-4" />
                           {formErrors.fullName}
                         </p>}
                       </div>
 
                       <div className="space-y-3">
-                        <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                          <Phone className="w-4 h-4" />
+                        <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                          <Phone className="w-4 h-4 text-teal-600" />
                           Số điện thoại *
                         </Label>
                         <Input
@@ -331,17 +359,17 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                           value={checkoutData.customerInfo.phone}
                           onChange={(e) => updateField('phone', e.target.value)}
                           placeholder="Nhập số điện thoại"
-                          className={`h-12 rounded-xl border-2 ${formErrors.phone ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                          className={`h-12 rounded-xl border-2 font-medium ${formErrors.phone ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-teal-500'} transition-colors bg-white`}
                         />
-                        {formErrors.phone && <p className="text-sm text-red-500 flex items-center gap-1">
+                        {formErrors.phone && <p className="text-sm text-red-600 flex items-center gap-1 font-medium">
                           <AlertCircle className="w-4 h-4" />
                           {formErrors.phone}
                         </p>}
                       </div>
 
                       <div className="space-y-3 md:col-span-2">
-                        <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                          <Mail className="w-4 h-4" />
+                        <Label htmlFor="email" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                          <Mail className="w-4 h-4 text-teal-600" />
                           Email *
                         </Label>
                         <Input
@@ -350,17 +378,17 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                           value={checkoutData.customerInfo.email}
                           onChange={(e) => updateField('email', e.target.value)}
                           placeholder="Nhập email"
-                          className={`h-12 rounded-xl border-2 ${formErrors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                          className={`h-12 rounded-xl border-2 font-medium ${formErrors.email ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-teal-500'} transition-colors bg-white`}
                         />
-                        {formErrors.email && <p className="text-sm text-red-500 flex items-center gap-1">
+                        {formErrors.email && <p className="text-sm text-red-600 flex items-center gap-1 font-medium">
                           <AlertCircle className="w-4 h-4" />
                           {formErrors.email}
                         </p>}
                       </div>
 
                       <div className="space-y-3 md:col-span-2">
-                        <Label htmlFor="address" className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                          <MapPin className="w-4 h-4" />
+                        <Label htmlFor="address" className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                          <MapPin className="w-4 h-4 text-teal-600" />
                           Địa chỉ cụ thể *
                         </Label>
                         <Input
@@ -368,73 +396,73 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                           value={checkoutData.customerInfo.address}
                           onChange={(e) => updateField('address', e.target.value)}
                           placeholder="Số nhà, tên đường"
-                          className={`h-12 rounded-xl border-2 ${formErrors.address ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                          className={`h-12 rounded-xl border-2 font-medium ${formErrors.address ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-teal-500'} transition-colors bg-white`}
                         />
-                        {formErrors.address && <p className="text-sm text-red-500 flex items-center gap-1">
+                        {formErrors.address && <p className="text-sm text-red-600 flex items-center gap-1 font-medium">
                           <AlertCircle className="w-4 h-4" />
                           {formErrors.address}
                         </p>}
                       </div>
 
                       <div className="space-y-3">
-                        <Label htmlFor="city" className="text-sm font-medium text-gray-700">Tỉnh/Thành phố *</Label>
+                        <Label htmlFor="city" className="text-sm font-semibold text-slate-700">Tỉnh/Thành phố *</Label>
                         <Input
                           id="city"
                           value={checkoutData.customerInfo.city}
                           onChange={(e) => updateField('city', e.target.value)}
                           placeholder="Tỉnh/Thành phố"
-                          className="h-12 rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-colors"
+                          className="h-12 rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors bg-white font-medium"
                         />
                       </div>
 
                       <div className="space-y-3">
-                        <Label htmlFor="district" className="text-sm font-medium text-gray-700">Quận/Huyện *</Label>
+                        <Label htmlFor="district" className="text-sm font-semibold text-slate-700">Quận/Huyện *</Label>
                         <Input
                           id="district"
                           value={checkoutData.customerInfo.district}
                           onChange={(e) => updateField('district', e.target.value)}
                           placeholder="Quận/Huyện"
-                          className={`h-12 rounded-xl border-2 ${formErrors.district ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-blue-500'} transition-colors`}
+                          className={`h-12 rounded-xl border-2 font-medium ${formErrors.district ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-teal-500'} transition-colors bg-white`}
                         />
-                        {formErrors.district && <p className="text-sm text-red-500 flex items-center gap-1">
+                        {formErrors.district && <p className="text-sm text-red-600 flex items-center gap-1 font-medium">
                           <AlertCircle className="w-4 h-4" />
                           {formErrors.district}
                         </p>}
                       </div>
 
                       <div className="space-y-3 md:col-span-2">
-                        <Label htmlFor="ward" className="text-sm font-medium text-gray-700">Phường/Xã</Label>
+                        <Label htmlFor="ward" className="text-sm font-semibold text-slate-700">Phường/Xã</Label>
                         <Input
                           id="ward"
                           value={checkoutData.customerInfo.ward}
                           onChange={(e) => updateField('ward', e.target.value)}
                           placeholder="Phường/Xã (tùy chọn)"
-                          className="h-12 rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-colors"
+                          className="h-12 rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors bg-white font-medium"
                         />
                       </div>
 
                       <div className="space-y-3 md:col-span-2">
-                        <Label htmlFor="notes" className="text-sm font-medium text-gray-700">Ghi chú</Label>
+                        <Label htmlFor="notes" className="text-sm font-semibold text-slate-700">Ghi chú</Label>
                         <Textarea
                           id="notes"
                           value={checkoutData.customerInfo.notes}
                           onChange={(e) => updateField('notes', e.target.value)}
                           placeholder="Ghi chú cho đơn hàng (tùy chọn)"
                           rows={4}
-                          className="rounded-xl border-2 border-gray-200 focus:border-blue-500 transition-colors resize-none"
+                          className="rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors resize-none bg-white font-medium"
                         />
                       </div>
 
                       <div className="md:col-span-2">
-                        <div className="flex items-center space-x-3 p-4 bg-white rounded-xl border border-gray-200">
+                        <div className="flex items-center space-x-4 p-4 bg-white rounded-xl border-2 border-slate-200 hover:border-teal-400 transition-colors">
                           <Checkbox
                             id="saveAddress"
                             checked={checkoutData.saveAddress}
                             onCheckedChange={(checked) => updateSaveAddress(!!checked)}
-                            className="w-5 h-5"
+                            className="w-5 h-5 border-2 border-teal-500"
                           />
-                          <Label htmlFor="saveAddress" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                            <Shield className="w-4 h-4" />
+                          <Label htmlFor="saveAddress" className="text-sm font-semibold text-slate-700 flex items-center gap-2 cursor-pointer">
+                            <Shield className="w-4 h-4 text-teal-600" />
                             Lưu địa chỉ này cho lần mua hàng tiếp theo
                           </Label>
                         </div>
@@ -446,36 +474,36 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
             </div>
 
             {/* Payment Method */}
-            <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-slate-700 to-slate-900 p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <CreditCard className="w-6 h-6 text-white" />
+                  <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                    <CreditCard className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-white">Phương thức thanh toán</h3>
-                    <p className="text-green-100">Chọn cách thức thanh toán phù hợp</p>
+                    <h3 className="text-2xl font-bold text-white">Phương thức thanh toán</h3>
+                    {/* <p className="text-slate-300 font-medium">Chọn cách thức thanh toán an toàn</p> */}
                   </div>
                 </div>
               </div>
               
               <div className="p-8">
-                <RadioGroup value={checkoutData.paymentMethod} onValueChange={handlePaymentMethodChange} className="space-y-4">
-                  <div className="relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                <RadioGroup value={checkoutData.paymentMethod} onValueChange={handlePaymentMethodChange} className="space-y-6">
+                  <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-orange-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                     <div className="flex items-center space-x-4">
-                      <RadioGroupItem value="COD" id="cod" className="w-5 h-5" />
+                      <RadioGroupItem value="COD" id="cod" className="w-5 h-5 border-2 border-orange-500" />
                       <Label htmlFor="cod" className="cursor-pointer flex-1">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                              <Truck className="w-6 h-6 text-white" />
+                            <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                              <Truck className="w-7 h-7 text-white" />
                             </div>
                             <div>
-                              <span className="text-lg font-semibold text-gray-900">Thanh toán khi nhận hàng (COD)</span>
-                              <p className="text-sm text-gray-600 mt-1">Thanh toán bằng tiền mặt khi nhận hàng</p>
+                              <span className="text-xl font-bold text-slate-900">Thanh toán khi nhận hàng (COD)</span>
+                              <p className="text-sm text-slate-600 mt-1 font-medium">Thanh toán bằng tiền mặt khi nhận sách</p>
                             </div>
                           </div>
-                          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+                          <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold">
                             Phổ biến
                           </Badge>
                         </div>
@@ -483,17 +511,17 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
                     </div>
                   </div>
 
-                  <div className="relative p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer group">
+                  <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                     <div className="flex items-center space-x-4">
-                      <RadioGroupItem value="BANKING" id="banking" className="w-5 h-5" />
+                      <RadioGroupItem value="BANKING" id="banking" className="w-5 h-5 border-2 border-teal-500" />
                       <Label htmlFor="banking" className="cursor-pointer flex-1">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                            <CreditCard className="w-6 h-6 text-white" />
+                          <div className="w-14 h-14 bg-gradient-to-br from-teal-600 to-cyan-700 rounded-xl flex items-center justify-center shadow-lg">
+                            <CreditCard className="w-7 h-7 text-white" />
                           </div>
                           <div>
-                            <span className="text-lg font-semibold text-gray-900">Chuyển khoản ngân hàng</span>
-                            <p className="text-sm text-gray-600 mt-1">Chuyển khoản qua tài khoản ngân hàng</p>
+                            <span className="text-xl font-bold text-slate-900">Chuyển khoản ngân hàng</span>
+                            <p className="text-sm text-slate-600 mt-1 font-medium">Chuyển khoản qua tài khoản ngân hàng</p>
                           </div>
                         </div>
                       </Label>
@@ -505,14 +533,14 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
 
             {/* Coupon */}
             <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-6">
+              <div className="bg-gradient-to-r from-amber-600 to-red-950 p-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                     <Gift className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-white">Mã giảm giá</h3>
-                    <p className="text-purple-100">Nhời mã để được ưu đãi đặc biệt</p>
+                    {/* <p className="text-purple-100">Nhời mã để được ưu đãi đặc biệt</p> */}
                   </div>
                 </div>
               </div>
@@ -565,7 +593,7 @@ const CheckoutClient = ({ userId, savedAddresses: initialSavedAddresses }: Check
 {/* Order Summary Sidebar */}
 <div className="lg:col-span-1">
   <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden sticky top-4">
-    <div className="bg-gradient-to-r from-red-500 to-pink-600 p-6">
+    <div className="bg-gradient-to-r from-blue-500 to-blue-950 p-6">
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
           <ShoppingCart className="w-6 h-6 text-white" />
