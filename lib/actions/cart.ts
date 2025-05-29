@@ -7,14 +7,14 @@ export async function fetchCartAction() {
   try {
     const { userId } = await auth();
     if (!userId) {
-      throw new Error('Vui lòng đăng nhập để xem giỏ hàng');
+      return { error: 'Vui lòng đăng nhập để xem giỏ hàng' };
     }
     
-    const cart = await getCart(userId); // userId is already clerkId from Clerk
-    return cart || [];
+    const cart = await getCart(userId);
+    return { data: cart || [] };
   } catch (error) {
     console.error('Error in fetchCartAction:', error);
-    throw error;
+    return { error: 'Không thể tải giỏ hàng' };
   }
 }
 
@@ -26,31 +26,31 @@ export async function addToCartAction(
   try {
     const { userId } = await auth();
     if (!userId) {
-      throw new Error('Vui lòng đăng nhập để thêm sách vào giỏ hàng');
+      return { error: 'Vui lòng đăng nhập để thêm sách vào giỏ hàng' };
     }
     
     // Validate input
     if (!bookId || bookId <= 0) {
-      throw new Error('ID sách không hợp lệ');
+      return { error: 'ID sách không hợp lệ' };
     }
     
     if (!['color', 'photo'].includes(version)) {
-      throw new Error('Phiên bản sách không hợp lệ');
+      return { error: 'Phiên bản sách không hợp lệ' };
     }
     
     if (quantity <= 0) {
-      throw new Error('Số lượng phải lớn hơn 0');
+      return { error: 'Số lượng phải lớn hơn 0' };
     }
     
-    const cartItem = await addToCart(userId, bookId, version, quantity); // userId is clerkId
-    if (!cartItem) {
-      throw new Error('Không thể thêm sách vào giỏ hàng');
+    const result = await addToCart(userId, bookId, version, quantity);
+    if (!result.success) {
+      return { error: result.error || 'Không thể thêm sách vào giỏ hàng' };
     }
     
-    return cartItem;
-  } catch (error) {
+    return { data: result.data, success: 'Đã thêm sách vào giỏ hàng' };
+  } catch (error: any) {
     console.error('Error in addToCartAction:', error);
-    throw error;
+    return { error: error.message || 'Không thể thêm sách vào giỏ hàng' };
   }
 }
 
@@ -58,29 +58,36 @@ export async function updateCartItemAction(cartId: number, quantity: number) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      throw new Error('Vui lòng đăng nhập để cập nhật giỏ hàng');
+      return { error: 'Vui lòng đăng nhập để cập nhật giỏ hàng' };
     }
 
     // Validate input
     if (!cartId || cartId <= 0) {
-      throw new Error('ID giỏ hàng không hợp lệ');
+      return { error: 'ID giỏ hàng không hợp lệ' };
     }
     
     if (quantity < 0) {
-      throw new Error('Số lượng không thể âm');
+      return { error: 'Số lượng không thể âm' };
     }
     
     // Nếu quantity = 0, xóa item thay vì update
     if (quantity === 0) {
-      await removeCartItem(cartId);
-      return { success: true, message: 'Đã xóa sách khỏi giỏ hàng' };
+      const result = await removeCartItem(cartId);
+      if (!result.success) {
+        return { error: result.error || 'Không thể xóa sách khỏi giỏ hàng' };
+      }
+      return { success: 'Đã xóa sách khỏi giỏ hàng' };
     }
     
-    await updateCartItem(cartId, quantity);
-    return { success: true, message: 'Đã cập nhật số lượng sách' };
-  } catch (error) {
+    const result = await updateCartItem(cartId, quantity);
+    if (!result.success) {
+      return { error: result.error || 'Không thể cập nhật số lượng' };
+    }
+    
+    return { success: 'Đã cập nhật số lượng sách' };
+  } catch (error: any) {
     console.error('Error in updateCartItemAction:', error);
-    throw error;
+    return { error: error.message || 'Không thể cập nhật số lượng' };
   }
 }
 
@@ -88,19 +95,23 @@ export async function removeCartItemAction(cartId: number) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      throw new Error('Vui lòng đăng nhập để xóa sách khỏi giỏ hàng');
+      return { error: 'Vui lòng đăng nhập để xóa sách khỏi giỏ hàng' };
     }
 
     // Validate input
     if (!cartId || cartId <= 0) {
-      throw new Error('ID giỏ hàng không hợp lệ');
+      return { error: 'ID giỏ hàng không hợp lệ' };
     }
     
-    await removeCartItem(cartId);
-    return { success: true, message: 'Đã xóa sách khỏi giỏ hàng' };
-  } catch (error) {
+    const result = await removeCartItem(cartId);
+    if (!result.success) {
+      return { error: result.error || 'Không thể xóa sách khỏi giỏ hàng' };
+    }
+    
+    return { success: 'Đã xóa sách khỏi giỏ hàng' };
+  } catch (error: any) {
     console.error('Error in removeCartItemAction:', error);
-    throw error;
+    return { error: error.message || 'Không thể xóa sách khỏi giỏ hàng' };
   }
 }
 
@@ -108,14 +119,18 @@ export async function clearCartAction() {
   try {
     const { userId } = await auth();
     if (!userId) {
-      throw new Error('Vui lòng đăng nhập để xóa giỏ hàng');
+      return { error: 'Vui lòng đăng nhập để xóa giỏ hàng' };
     }
     
-    await clearCart(userId); // userId is clerkId
-    return { success: true, message: 'Đã xóa toàn bộ giỏ hàng' };
-  } catch (error) {
+    const result = await clearCart(userId);
+    if (!result.success) {
+      return { error: result.error || 'Không thể xóa giỏ hàng' };
+    }
+    
+    return { success: 'Đã xóa toàn bộ giỏ hàng' };
+  } catch (error: any) {
     console.error('Error in clearCartAction:', error);
-    throw error;
+    return { error: error.message || 'Không thể xóa giỏ hàng' };
   }
 }
 
@@ -124,24 +139,24 @@ export async function getCartItemAction(cartId: number) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      throw new Error('Unauthorized');
+      return { error: 'Unauthorized' };
     }
     
     // Get user's cart to validate ownership
     const cart = await getCart(userId);
     if (!cart) {
-      throw new Error('Giỏ hàng không tồn tại');
+      return { error: 'Giỏ hàng không tồn tại' };
     }
     
     const cartItem = cart.find(item => item.id === cartId);
     if (!cartItem) {
-      throw new Error('Sản phẩm không tồn tại trong giỏ hàng của bạn');
+      return { error: 'Sản phẩm không tồn tại trong giỏ hàng của bạn' };
     }
     
-    return cartItem;
-  } catch (error) {
+    return { data: cartItem };
+  } catch (error: any) {
     console.error('Error in getCartItemAction:', error);
-    throw error;
+    return { error: error.message || 'Không thể lấy thông tin sản phẩm' };
   }
 }
 

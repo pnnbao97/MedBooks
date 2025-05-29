@@ -33,7 +33,10 @@ const CartModal = () => {
 
     // Set timeout mới
     const timeoutId = setTimeout(() => {
-      if (newQuantity > 0) {
+      if (newQuantity <= 0) {
+        // Nếu quantity <= 0, xóa item khỏi giỏ hàng
+        removeItem(itemId);
+      } else {
         updateQuantity(itemId, newQuantity);
       }
       // Cleanup timeout
@@ -42,19 +45,22 @@ const CartModal = () => {
         delete updated[itemId];
         return updated;
       });
-    }, 800); // Đợi 800ms sau khi người dùng ngừng thao tác
+    }, 500); 
 
     setDebounceTimeouts(prev => ({
       ...prev,
       [itemId]: timeoutId
     }));
-  }, [updateQuantity, debounceTimeouts]);
+  }, [updateQuantity, removeItem, debounceTimeouts]);
 
   // Handle quantity change (cho cả button và input)
   const handleQuantityChange = (itemId: number, newQuantity: number, item: any) => {
-    // Validate quantity
-    if (newQuantity < 1) newQuantity = 1;
-    if (newQuantity > item.book.availableCopies) {
+    // Nếu quantity <= 0, set về 0 để xóa
+    if (newQuantity <= 0) {
+      newQuantity = 0;
+    }
+    // Nếu vượt quá available copies, giới hạn về max available
+    else if (newQuantity > item.book.availableCopies) {
       newQuantity = item.book.availableCopies;
     }
 
@@ -70,7 +76,8 @@ const CartModal = () => {
 
   // Handle input change
   const handleInputChange = (itemId: number, value: string, item: any) => {
-    const numValue = parseInt(value) || 1;
+    // Nếu input trống hoặc không phải số, set về 0
+    const numValue = value === '' ? 0 : parseInt(value) || 0;
     handleQuantityChange(itemId, numValue, item);
   };
 
@@ -88,8 +95,12 @@ const CartModal = () => {
       });
     }
 
-    if (currentTemp !== item.quantity && currentTemp > 0) {
-      updateQuantity(itemId, currentTemp);
+    if (currentTemp !== item.quantity) {
+      if (currentTemp <= 0) {
+        removeItem(itemId);
+      } else {
+        updateQuantity(itemId, currentTemp);
+      }
     }
   };
 
@@ -104,8 +115,6 @@ const CartModal = () => {
 
   return (
     <div className="w-max absolute p-4 rounded-md shadow-[0_3px_10px_rgb(0,0,0,0.2)] bg-white top-12 right-0 flex flex-col gap-6 z-20">
-      {/* {isLoading ? (
-        <div>Đang tải...</div> */}
       {items.length === 0 ? (
         <div>Giỏ hàng trống</div>
       ) : (
@@ -114,7 +123,6 @@ const CartModal = () => {
           <div className="flex flex-col gap-8">
             {items.map((item) => {
               const currentQuantity = tempQuantities[item.id] ?? item.quantity;
-              // const hasChanges = currentQuantity !== item.quantity;
               
               return (
                 <div key={item.id} className="flex gap-4">
@@ -151,31 +159,27 @@ const CartModal = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleQuantityChange(item.id, currentQuantity - 1, item)}
-                          disabled={currentQuantity <= 1}
+                          disabled={isLoading}
                         >
                           -
                         </Button>
                         <div className="flex flex-col items-center">
                           <Input
                             type="number"
-                            min="1"
+                            min="0"
                             max={item.book.availableCopies}
-                            value={currentQuantity}
+                            value={currentQuantity === 0 ? '' : currentQuantity}
                             onChange={(e) => handleInputChange(item.id, e.target.value, item)}
                             onBlur={() => handleInputBlur(item.id, item)}
                             className="w-16 text-center border rounded px-2 py-1 text-sm border-gray-300"
+                            disabled={isLoading}
                           />
-                          {/* {hasChanges && (
-                            <span className="text-xs text-orange-500 mt-1">
-                              Đang cập nhật...
-                            </span>
-                          )} */}
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleQuantityChange(item.id, currentQuantity + 1, item)}
-                          disabled={currentQuantity >= item.book.availableCopies}
+                          disabled={currentQuantity >= item.book.availableCopies || isLoading}
                         >
                           +
                         </Button>
@@ -209,7 +213,7 @@ const CartModal = () => {
               <Button
                 className="bg-blue-900 text-white hover:bg-white hover:text-blue-900"
                 onClick={() => user && clearCart()}
-                disabled={!user}
+                disabled={!user || isLoading}
               >
                 Xóa giỏ hàng
               </Button>

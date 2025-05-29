@@ -10,6 +10,7 @@ export interface CartItem {
   quantity: number;
   version: 'color' | 'photo';
   book: {
+    availableCopies: number;
     title: string;
     slug: string;
     colorPrice: number;
@@ -18,6 +19,12 @@ export interface CartItem {
     colorSaleAmount: number;
     coverUrl: string;
   };
+}
+
+interface CartResult {
+  success: boolean;
+  data?: any;
+  error?: string;
 }
 
 export async function getCart(clerkId: string): Promise<CartItem[] | null> {
@@ -46,11 +53,12 @@ export async function getCart(clerkId: string): Promise<CartItem[] | null> {
           hasColorSale: books.hasColorSale,
           colorSaleAmount: books.colorSaleAmount,
           coverUrl: books.coverUrl,
+          availableCopies: books.availableCopies,
         },
       })
       .from(carts)
       .innerJoin(books, eq(carts.bookId, books.id))
-      .where(eq(carts.userId, clerkId)); // Direct reference to clerkId
+      .where(eq(carts.userId, clerkId));
 
     return cartItems;
   } catch (error) {
@@ -59,7 +67,7 @@ export async function getCart(clerkId: string): Promise<CartItem[] | null> {
   }
 }
 
-export async function addToCart(clerkId: string, bookId: number, version: 'color' | 'photo', quantity: number = 1): Promise<CartItem | null> {
+export async function addToCart(clerkId: string, bookId: number, version: 'color' | 'photo', quantity: number = 1): Promise<CartResult> {
   try {
     // Check if user exists and is active
     const user = await db
@@ -68,7 +76,9 @@ export async function addToCart(clerkId: string, bookId: number, version: 'color
       .where(and(eq(users.clerkId, clerkId), eq(users.isActive, true)))
       .limit(1);
 
-    if (!user[0]) throw new Error('User not found');
+    if (!user[0]) {
+      return { success: false, error: 'User not found' };
+    }
 
     // Check book availability
     const [book] = await db
@@ -76,10 +86,12 @@ export async function addToCart(clerkId: string, bookId: number, version: 'color
       .from(books)
       .where(eq(books.id, bookId));
     
-    if (!book) throw new Error('Sách không tồn tại');
+    if (!book) {
+      return { success: false, error: 'Sách không tồn tại' };
+    }
     
     if (book.availableCopies < quantity) {
-      throw new Error('Số lượng vượt quá số sách có sẵn');
+      return { success: false, error: 'Số lượng vượt quá số sách có sẵn' };
     }
 
     // Check if item already exists in cart
@@ -87,7 +99,7 @@ export async function addToCart(clerkId: string, bookId: number, version: 'color
       .select()
       .from(carts)
       .where(and(
-        eq(carts.userId, clerkId), // Direct reference to clerkId
+        eq(carts.userId, clerkId),
         eq(carts.bookId, bookId), 
         eq(carts.version, version)
       ))
@@ -97,15 +109,13 @@ export async function addToCart(clerkId: string, bookId: number, version: 'color
       // Update existing item
       const newQuantity = existingItem[0].quantity + quantity;
       
-      // Check if new quantity exceeds availability
-      if (book.availableCopies < newQuantity) {
-        throw new Error('Số lượng vượt quá số sách có sẵn');
-      }
+      // Check if new quantity exceeds availability - adjust if needed
+      const finalQuantity = Math.min(newQuantity, book.availableCopies);
 
       const updatedItem = await db
         .update(carts)
         .set({ 
-          quantity: newQuantity, 
+          quantity: finalQuantity, 
           updatedAt: new Date() 
         })
         .where(eq(carts.id, existingItem[0].id))
@@ -120,18 +130,22 @@ export async function addToCart(clerkId: string, bookId: number, version: 'color
           hasColorSale: books.hasColorSale,
           colorSaleAmount: books.colorSaleAmount,
           coverUrl: books.coverUrl,
+          availableCopies: books.availableCopies,
         })
         .from(books)
         .where(eq(books.id, bookId));
 
-      return { ...updatedItem[0], book: bookData };
+      return { 
+        success: true, 
+        data: { ...updatedItem[0], book: bookData } 
+      };
     }
 
     // Create new cart item
     const [newItem] = await db
       .insert(carts)
       .values({
-        userId: clerkId, // Direct reference to clerkId
+        userId: clerkId,
         bookId,
         version,
         quantity,
@@ -149,20 +163,26 @@ export async function addToCart(clerkId: string, bookId: number, version: 'color
         hasColorSale: books.hasColorSale,
         colorSaleAmount: books.colorSaleAmount,
         coverUrl: books.coverUrl,
+        availableCopies: books.availableCopies,
       })
       .from(books)
       .where(eq(books.id, bookId));
 
-    return { ...newItem, book: bookData };
+    return { 
+      success: true, 
+      data: { ...newItem, book: bookData } 
+    };
   } catch (error) {
     console.error('Error adding to cart:', error);
-    throw error;
+    return { success: false, error: 'Không thể thêm sách vào giỏ hàng' };
   }
 }
 
-export async function updateCartItem(cartId: number, quantity: number): Promise<void> {
+export async function updateCartItem(cartId: number, quantity: number): Promise<CartResult> {
   try {
-    if (quantity < 1) throw new Error('Quantity must be at least 1');
+    if (quantity < 1) {
+      return { success: false, error: 'Quantity must be at least 1' };
+    }
     
     // Get cart item and check book availability
     const [cartItem] = await db
@@ -170,44 +190,51 @@ export async function updateCartItem(cartId: number, quantity: number): Promise<
       .from(carts)
       .where(eq(carts.id, cartId));
     
-    if (!cartItem) throw new Error('Cart item not found');
+    if (!cartItem) {
+      return { success: false, error: 'Cart item not found' };
+    }
     
     const [book] = await db
       .select({ availableCopies: books.availableCopies })
       .from(books)
       .where(eq(books.id, cartItem.bookId));
     
-    if (!book) throw new Error('Sách không tồn tại');
-    
-    if (book.availableCopies < quantity) {
-      throw new Error('Số lượng vượt quá số sách có sẵn');
+    if (!book) {
+      return { success: false, error: 'Sách không tồn tại' };
     }
+    
+    // Nếu quantity vượt quá available copies, giới hạn về available copies
+    const finalQuantity = Math.min(quantity, book.availableCopies);
     
     await db
       .update(carts)
       .set({ 
-        quantity, 
+        quantity: finalQuantity, 
         updatedAt: new Date() 
       })
       .where(eq(carts.id, cartId));
+    
+    return { success: true };
   } catch (error) {
     console.error('Error updating cart item:', error);
-    throw error;
+    return { success: false, error: 'Không thể cập nhật số lượng' };
   }
 }
 
-export async function removeCartItem(cartId: number): Promise<void> {
+export async function removeCartItem(cartId: number): Promise<CartResult> {
   try {
     await db
       .delete(carts)
       .where(eq(carts.id, cartId));
+    
+    return { success: true };
   } catch (error) {
     console.error('Error removing cart item:', error);
-    throw error;
+    return { success: false, error: 'Không thể xóa sách khỏi giỏ hàng' };
   }
 }
 
-export async function clearCart(clerkId: string): Promise<void> {
+export async function clearCart(clerkId: string): Promise<CartResult> {
   try {
     // Check if user exists
     const user = await db
@@ -216,13 +243,17 @@ export async function clearCart(clerkId: string): Promise<void> {
       .where(and(eq(users.clerkId, clerkId), eq(users.isActive, true)))
       .limit(1);
 
-    if (!user[0]) throw new Error('User not found');
+    if (!user[0]) {
+      return { success: false, error: 'User not found' };
+    }
 
     await db
       .delete(carts)
-      .where(eq(carts.userId, clerkId)); // Direct reference to clerkId
+      .where(eq(carts.userId, clerkId));
+    
+    return { success: true };
   } catch (error) {
     console.error('Error clearing cart:', error);
-    throw error;
+    return { success: false, error: 'Không thể xóa giỏ hàng' };
   }
 }
