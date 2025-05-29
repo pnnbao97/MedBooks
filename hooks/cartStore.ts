@@ -131,7 +131,8 @@ export const useCartStore = create<CartState>()(
       updateQuantity: async (cartId: number, quantity: number) => {
         set({ isLoading: true, error: null });
         try {
-          if (quantity < 1) {
+          // Đồng bộ với logic trong CartModal: quantity <= 0 sẽ xóa item
+          if (quantity <= 0) {
             await get().removeItem(cartId);
             return;
           }
@@ -143,10 +144,10 @@ export const useCartStore = create<CartState>()(
             return;
           }
           
+          // Đồng bộ với logic trong CartModal: giới hạn quantity theo availableCopies
           if (quantity > item.book.availableCopies) {
-            toast.error('Số lượng vượt quá số sách có sẵn');
-            set({ error: 'Số lượng vượt quá số sách có sẵn', isLoading: false });
-            return;
+            quantity = item.book.availableCopies;
+            toast.error('Số lượng vượt quá số sách có sẵn, đã điều chỉnh về tối đa có thể');
           }
 
           const result = await updateCartItemAction(cartId, quantity);
