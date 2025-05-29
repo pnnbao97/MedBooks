@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
+
 // Lazy load components
 const Add = lazy(() => import('@/components/Add'));
 const CustomizeProducts = lazy(() => import('@/components/CustomizeProducts'));
@@ -385,6 +386,7 @@ const BookDetailClient = ({ initialBook, medicalSpecialties }: BookDetailClientP
                       isCompleted={initialBook.isCompleted}
                       preorder={initialBook.preorder}
                       selectedVersion={selectedVersion}
+                      bookTitle={initialBook.title}
                     />
                   </Suspense>
                 </div>

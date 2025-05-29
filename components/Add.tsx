@@ -71,11 +71,12 @@ const Add = ({
       const versionText = selectedVersion === 'color' ? 'bản gốc' : 'bản photo';
       toast.success(
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-green-600" />
             <span className="font-semibold">Thêm vào giỏ hàng thành công!</span>
-          </div>
+          </div> */}
           <p className="text-sm text-gray-600">
+          
             Đã thêm {quantity} cuốn "{bookTitle}" ({versionText}) vào giỏ hàng
           </p>
         </div>,

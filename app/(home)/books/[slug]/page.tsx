@@ -143,7 +143,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       },
     };
   } catch (error) {
-    console.error('Error generating metadata:', error);
+    
     return {
       title: 'Lỗi tải trang',
       description: 'Đã xảy ra lỗi khi tải thông tin sách.',
@@ -241,7 +241,7 @@ const SinglePage = async ({ params }: { params: Promise<{ slug: string }> }) => 
       return (
         <div className="text-center py-8">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Không tìm thấy sách</h1>
-          <p className="text-red-500">{response.message || 'Sách y khoa không tồn tại hoặc đã bị xóa'}</p>
+          <p className="text-red-500">{response.message || 'Sách không tồn tại hoặc đã bị xóa'}</p>
           <a 
             href="/" 
             className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"

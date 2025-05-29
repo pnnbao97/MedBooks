@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 
 interface CustomizeProductsProps {
   bookId: number;
@@ -77,9 +78,9 @@ const versions = [
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+        {/* <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
           <span className="text-white text-sm font-bold">📖</span>
-        </div>
+        </div> */}
         <h4 className="text-lg font-semibold text-gray-900">Chọn phiên bản sách</h4>
       </div>
 
@@ -109,25 +110,22 @@ const versions = [
         {/* Hiển thị ảnh cho bản gốc, icon cho bản photo */}
         {version.type === 'color' ? (
           <div className="w-12 h-16 rounded-lg overflow-hidden ">
-            <img 
-              src={book.coverUrl}
-              alt={`${version.title} - ${book.title}`}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Fallback về icon nếu ảnh lỗi
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const fallback = target.nextElementSibling as HTMLElement;
-                if (fallback) fallback.style.display = 'flex';
-              }}
-            />
-            {/* Fallback icon khi ảnh lỗi */}
+         
+             <Image
+                              src={book.coverUrl || '/default-book-cover.jpg'}
+                              alt={book.title}
+                              width={72}
+                              height={96}
+                              className="object-cover rounded-md"
+                              loading='lazy'
+                            />
+            {/* Fallback icon khi ảnh lỗi
             <div 
               className={`w-12 h-16 bg-gradient-to-br ${version.gradient} rounded-lg flex items-center justify-center text-2xl`}
               style={{ display: 'none' }}
             >
               {version.icon}
-            </div>
+            </div> */}
           </div>
         ) : (
           <div className={`w-12 h-12 bg-gradient-to-br ${version.gradient} rounded-xl flex items-center justify-center text-2xl`}>
