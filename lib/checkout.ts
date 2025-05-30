@@ -326,6 +326,37 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
   const paymentUrl = `${VNPAY_CONFIG.url}?${params.toString()}`;
   return { paymentUrl, transId: orderId };
 }
+
+// Atomic stock check and reserve
+async function reserveBookStock(items: CartItemWithBook[]): Promise<{ success: boolean; error?: string }> {
+  for (const item of items) {
+    // Use atomic update with condition
+    const result = await db
+      .update(books)
+      .set({
+        availableCopies: sql`${books.availableCopies} - ${item.quantity}`,
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(books.id, item.bookId),
+          gte(books.availableCopies, item.quantity) // Only update if sufficient stock
+        )
+      )
+      .returning({ id: books.id, newStock: books.availableCopies });
+
+    if (result.length === 0) {
+      // Rollback previously reserved books
+      await rollbackBookReservation(items.slice(0, items.indexOf(item)));
+      return { 
+        success: false, 
+        error: `Sách "${item.book.title}" không đủ số lượng trong kho` 
+      };
+    }
+  }
+  return { success: true };
+}
+
 // Rollback book reservation
 async function rollbackBookReservation(items: CartItemWithBook[]) {
   for (const item of items) {
