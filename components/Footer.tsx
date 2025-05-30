@@ -24,11 +24,11 @@ const Footer = () => {
             </a>
             <div className="flex gap-4">
               {[
-                { src: "/icons/facebook.svg", alt: "Facebook", href: "https://facebook.com/vmedbook" },
-                { src: "/icons/instagram.svg", alt: "Instagram", href: "https://instagram.com/vmedbook" },
-                { src: "/icons/youtube.svg", alt: "YouTube", href: "https://youtube.com/vmedbook" },
-                { src: "/icons/pinterest.svg", alt: "Pinterest", href: "https://pinterest.com/vmedbook" },
-                { src: "/icons/x.svg", alt: "X", href: "https://x.com/vmedbook" },
+                { src: "/facebook.png", alt: "Facebook", href: "https://facebook.com/vmedbook" },
+                { src: "/instagram.png", alt: "Instagram", href: "https://instagram.com/vmedbook" },
+                { src: "/youtube.png", alt: "YouTube", href: "https://youtube.com/vmedbook" },
+                { src: "/pinterest.png", alt: "Pinterest", href: "https://pinterest.com/vmedbook" },
+                { src: "/x.png", alt: "X", href: "https://x.com/vmedbook" },
               ].map((social) => (
                 <a key={social.alt} href={social.href} target="_blank" rel="noopener noreferrer" aria-label={social.alt}>
                   <Image
@@ -81,17 +81,17 @@ const Footer = () => {
             <span className="font-semibold">Thanh toán an toàn</span>
             <div className="flex gap-3">
               {[
-                { src: "/icons/discover.svg", alt: "Discover" },
-                { src: "/icons/skrill.svg", alt: "Skrill" },
-                { src: "/icons/paypal.svg", alt: "PayPal" },
-                { src: "/icons/mastercard.svg", alt: "MasterCard" },
-                { src: "/icons/visa.svg", alt: "Visa" },
+                { src: "/discover.png", alt: "Discover" },
+                { src: "/skrill.png", alt: "Skrill" },
+                { src: "/paypal.png", alt: "PayPal" },
+                { src: "/mastercard.png", alt: "MasterCard" },
+                { src: "/visa.png", alt: "Visa" },
               ].map((payment) => (
                 <Image
                   key={payment.alt}
                   src={payment.src}
                   alt={payment.alt}
-                  width={32}
+                  width={40}
                   height={20}
                   className="hover:opacity-80 transition-opacity"
                 />

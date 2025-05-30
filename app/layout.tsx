@@ -84,13 +84,15 @@ export const metadata: Metadata = {
     // yahoo: "your-yahoo-verification",
   },
   
-  // Robots
+  // FIXED: Robots configuration - Đảm bảo trang được index
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
+      noimageindex: false,
       'max-video-preview': -1,
       'max-image-preview': 'large',
       'max-snippet': -1,
@@ -101,12 +103,22 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.vmedbook.com",
   },
+  
+  // THÊM: Đảm bảo không có other metadata gây conflict
+  other: {
+    'google-site-verification': 'your-google-site-verification-code'
+  }
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="vi" className={`${ibmPlexSans.className} ${bebasNeue.variable}`}>
       <head>
+        {/* CRITICAL: Force indexing - Override mọi noindex */}
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="bingbot" content="index, follow" />
+        
         {/* Additional meta tags */}
         <meta name="theme-color" content="#2f89d8" />
         <meta name="msapplication-TileColor" content="#2f89d8" />
@@ -126,4 +138,4 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </body>
     </html>
   );
-}
+} 
