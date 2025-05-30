@@ -303,22 +303,25 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
     vnp_Version: '2.1.0'
   };
 
-  // Sort parameters alphabetically và tạo signData
+  // Tạo query string để hash (theo đúng format VNPay yêu cầu)
   const sortedKeys = Object.keys(paramsObj).sort();
-  const signData = sortedKeys
-    .map(key => `${key}=${paramsObj[key as keyof typeof paramsObj]}`)
-    .join('&');
+  
+  // Tạo URLSearchParams để encode đúng cách
+  const tempParams = new URLSearchParams();
+  sortedKeys.forEach(key => {
+    tempParams.append(key, paramsObj[key as keyof typeof paramsObj]);
+  });
+  
+  // Lấy query string đã encode để hash
+  const signData = tempParams.toString();
 
   const secureHash = crypto
     .createHmac('sha512', process.env.VNPAY_HASH_KEY || '50YOXVSX2GSZY9K3N9ZHD88VUU6MMEF2')
     .update(signData)
     .digest('hex');
 
-  // Tạo URLSearchParams và thêm các tham số theo thứ tự
-  const params = new URLSearchParams();
-  sortedKeys.forEach(key => {
-    params.append(key, paramsObj[key as keyof typeof paramsObj]);
-  });
+  // Tạo URLSearchParams cuối cùng với secureHash
+  const params = new URLSearchParams(tempParams);
   params.append('vnp_SecureHash', secureHash);
 
   const paymentUrl = `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?${params.toString()}`;
