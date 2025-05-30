@@ -281,7 +281,6 @@ async function createMoMoPayment(order: any, checkoutData: CheckoutData, orderSu
 // Create VNPay payment
 async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderSummary: OrderSummary) {
   const createDate = new Date();
-  const expireDate = new Date(createDate.getTime() + 15 * 60 * 1000); // 15 minutes from now
   const orderId = order.orderNumber;
 
   // Format dates as YYYYMMDDHHMMSS
@@ -292,38 +291,43 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
     vnp_Version: '2.1.0',
     vnp_Command: 'pay',
     vnp_TmnCode: VNPAY_CONFIG.tmnCode,
-    vnp_Amount: (orderSummary.total * 100).toString(), // Multiply by 100 to remove decimal
+    vnp_Amount: (orderSummary.total * 100).toString(), // Amount in VND cents
     vnp_CurrCode: 'VND',
-    vnp_TxnRef: orderId,
-    vnp_OrderInfo: encodeURIComponent(`Thanh toan don hang ${orderId}`),
-    vnp_OrderType: 'billpayment',
+    vnp_TxnRef: orderId.toString(),
+    vnp_OrderInfo: `Thanh toan don hang :${orderId}`, // Không encode ở đây
+    vnp_OrderType: 'other', // Đổi từ 'billpayment' thành 'other' như mẫu
     vnp_Locale: 'vn',
     vnp_ReturnUrl: 'https://vmedbook.com/checkout/callback/vnpay',
-    vnp_IpAddr: '127.0.0.1', // You may want to get actual client IP in production
+    vnp_IpAddr: '127.0.0.1',
     vnp_CreateDate: formatDate(createDate),
-    vnp_ExpireDate: formatDate(expireDate),
-    // Optional billing information
-    vnp_Bill_Mobile: checkoutData.customerInfo.phone.replace(/\D/g, ''),
-    vnp_Bill_Email: encodeURIComponent(checkoutData.customerInfo.email.trim().toLowerCase()),
-    vnp_Bill_FirstName: encodeURIComponent(checkoutData.customerInfo.fullName.split(' ').slice(0, -1).join(' ')),
-    vnp_Bill_LastName: encodeURIComponent(checkoutData.customerInfo.fullName.split(' ').pop() || ''),
-    vnp_Bill_Address: encodeURIComponent(checkoutData.customerInfo.address.trim()),
-    vnp_Bill_City: encodeURIComponent(checkoutData.customerInfo.city.trim()),
-    vnp_Bill_Country: 'VN',
   });
 
-  // Sort parameters alphabetically
-  const sortedParams = new URLSearchParams([...params.entries()].sort());
-  const signData = sortedParams.toString();
+  // Bỏ các tham số không có trong mẫu URL
+  // - vnp_ExpireDate
+  // - vnp_Bill_* (các thông tin billing)
+
+  // Sort parameters alphabetically theo key
+  const sortedParams = new URLSearchParams();
+  const sortedKeys = Array.from(params.keys()).sort();
+  
+  sortedKeys.forEach(key => {
+    sortedParams.append(key, params.get(key) || '');
+  });
+
+  // Tạo chuỗi để hash (không encode URL)
+  const signData = sortedKeys
+    .map(key => `${key}=${params.get(key)}`)
+    .join('&');
+
   const secureHash = crypto
     .createHmac('sha512', VNPAY_CONFIG.hashSecret)
     .update(signData)
     .digest('hex');
 
   // Append secure hash to parameters
-  params.append('vnp_SecureHash', secureHash);
+  sortedParams.append('vnp_SecureHash', secureHash);
 
-  const paymentUrl = `${VNPAY_CONFIG.url}?${params.toString()}`;
+  const paymentUrl = `${VNPAY_CONFIG.url}?${sortedParams.toString()}`;
   return { paymentUrl, transId: orderId };
 }
 
