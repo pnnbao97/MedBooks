@@ -1,4 +1,3 @@
-// lib/checkout.ts
 'use server';
 import { db } from '@/database/drizzle';
 import { 
@@ -7,12 +6,11 @@ import {
   orders, 
   orderItems, 
   coupons, 
-  shippingAddresses,
   users 
 } from '@/database/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { calculateItemPrice } from '@/lib/pricing';
-import { formatVND } from '@/lib/utils/currency'; // Sử dụng hàm từ currency.ts
+import { formatVND } from '@/lib/utils/currency';
 
 export interface CartItemWithBook {
   id: number;
@@ -45,7 +43,6 @@ export interface CheckoutData {
   };
   paymentMethod: 'COD' | 'BANKING';
   couponCode?: string;
-  saveAddress?: boolean;
 }
 
 export interface OrderSummary {
@@ -54,20 +51,6 @@ export interface OrderSummary {
   couponDiscount: number;
   total: number;
   items: CartItemWithBook[];
-}
-
-export interface ShippingAddress {
-  id: number;
-  userId: string;
-  fullName: string;
-  phone: string;
-  email: string;
-  address: string;
-  city: string;
-  district: string;
-  ward?: string;
-  isDefault: boolean;
-  createdAt: Date;
 }
 
 // Get user's cart items with book details
@@ -145,7 +128,7 @@ export async function validateCoupon(code: string, orderAmount: number) {
     if (couponData.minOrderAmount && orderAmount < couponData.minOrderAmount) {
       return {
         valid: false,
-        error: `Đơn hàng tối thiểu ${formatVND(couponData.minOrderAmount)} để sử dụng mã này`, // Bỏ await
+        error: `Đơn hàng tối thiểu ${formatVND(couponData.minOrderAmount)} để sử dụng mã này`,
       };
     }
 
@@ -176,49 +159,6 @@ function generateOrderNumber(): string {
   const timestamp = Date.now().toString();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `ORD${timestamp.slice(-8)}${random}`;
-}
-
-// Save shipping address
-export async function saveShippingAddress(clerkId: string, addressData: CheckoutData['customerInfo']) {
-  try {
-    const user = await db
-      .select()
-      .from(users)
-      .where(and(eq(users.clerkId, clerkId), eq(users.isActive, true)))
-      .limit(1);
-
-    if (!user[0]) throw new Error('User not found');
-
-    const existingAddresses = await db
-      .select({ id: shippingAddresses.id })
-      .from(shippingAddresses)
-      .where(eq(shippingAddresses.userId, clerkId))
-      .limit(1);
-
-    const isFirstAddress = existingAddresses.length === 0;
-
-    const [newAddress] = await db
-      .insert(shippingAddresses)
-      .values({
-        userId: clerkId,
-        fullName: addressData.fullName,
-        phone: addressData.phone,
-        email: addressData.email,
-        address: addressData.address,
-        city: addressData.city,
-        district: addressData.district,
-        ward: addressData.ward,
-        isDefault: isFirstAddress,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-
-    return newAddress;
-  } catch (error) {
-    console.error('Error saving shipping address:', error);
-    throw new Error('Failed to save shipping address');
-  }
 }
 
 // Create order with server-side validation
@@ -255,22 +195,11 @@ export async function createOrder(
     if (!user[0]) throw new Error('User not found');
 
     const result = await db.transaction(async (tx) => {
-      let savedAddressId = null;
-      if (checkoutData.saveAddress) {
-        try {
-          const savedAddress = await saveShippingAddress(clerkId, checkoutData.customerInfo);
-          savedAddressId = savedAddress.id;
-        } catch (error) {
-          console.warn('Failed to save address, continuing with order:', error);
-        }
-      }
-
       const [order] = await tx
         .insert(orders)
         .values({
           orderNumber: generateOrderNumber(),
           userId: clerkId,
-          shippingAddressId: savedAddressId,
           shippingFullName: checkoutData.customerInfo.fullName,
           shippingPhone: checkoutData.customerInfo.phone,
           shippingEmail: checkoutData.customerInfo.email,
@@ -327,29 +256,5 @@ export async function createOrder(
   } catch (error) {
     console.error('Error creating order:', error);
     throw new Error('Failed to create order');
-  }
-}
-
-// Get user's shipping addresses
-export async function getUserShippingAddresses(clerkId: string) {
-  try {
-    const user = await db
-      .select()
-      .from(users)
-      .where(and(eq(users.clerkId, clerkId), eq(users.isActive, true)))
-      .limit(1);
-
-    if (!user[0]) throw new Error('User not found');
-
-    const addresses = await db
-      .select()
-      .from(shippingAddresses)
-      .where(eq(shippingAddresses.userId, clerkId))
-      .orderBy(shippingAddresses.isDefault, shippingAddresses.createdAt);
-
-    return addresses;
-  } catch (error) {
-    console.error('Error fetching shipping addresses:', error);
-    throw new Error('Failed to fetch shipping addresses');
   }
 }
