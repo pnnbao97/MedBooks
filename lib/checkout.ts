@@ -74,8 +74,8 @@ const MOMO_CONFIG = {
 
 // VNPay configuration
 const VNPAY_CONFIG = {
-  tmnCode: process.env.VNPAY_TMN_CODE || '',
-  hashSecret: process.env.VNPAY_HASH_KEY || '',
+  tmnCode: process.env.VNPAY_TMN_CODE! || '',
+  hashSecret: process.env.VNPAY_HASH_KEY! || '',
   url: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
   returnUrl: process.env.VNPAY_RETURN_URL || 'http://localhost:3000/checkout/callback/vnpay',
 };
@@ -298,7 +298,7 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
     vnp_OrderInfo: `Thanh toan don hang :${orderId}`,
     vnp_OrderType: 'other',
     vnp_ReturnUrl: 'https://vmedbook.com/checkout/callback/vnpay',
-    vnp_TmnCode: VNPAY_CONFIG.tmnCode,
+    vnp_TmnCode: process.env.VNPAY_TMN_CODE || 'P122GLK7',
     vnp_TxnRef: orderId.toString(),
     vnp_Version: '2.1.0'
   };
@@ -310,7 +310,7 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
     .join('&');
 
   const secureHash = crypto
-    .createHmac('sha512', VNPAY_CONFIG.hashSecret)
+    .createHmac('sha512', process.env.VNPAY_HASH_KEY || '50YOXVSX2GSZY9K3N9ZHD88VUU6MMEF2')
     .update(signData)
     .digest('hex');
 
@@ -321,10 +321,9 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
   });
   params.append('vnp_SecureHash', secureHash);
 
-  const paymentUrl = `${VNPAY_CONFIG.url}?${params.toString()}`;
+  const paymentUrl = `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?${params.toString()}`;
   return { paymentUrl, transId: orderId };
 }
-
 // Atomic stock check and reserve
 async function reserveBookStock(items: CartItemWithBook[]): Promise<{ success: boolean; error?: string }> {
   for (const item of items) {
