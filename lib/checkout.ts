@@ -8,9 +8,13 @@ import {
   coupons, 
   users 
 } from '@/database/schema';
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { calculateItemPrice } from '@/lib/pricing';
 import { formatVND } from '@/lib/utils/currency';
+import axios from 'axios';
+import crypto from 'crypto';
+import { checkoutSchema } from '@/lib/validations';
+import { z } from 'zod';
 
 export interface CartItemWithBook {
   id: number;
@@ -30,7 +34,6 @@ export interface CartItemWithBook {
   };
 }
 
-// Updated interface to match the validation schema
 export interface CheckoutData {
   customerInfo: {
     fullName: string;
@@ -42,7 +45,7 @@ export interface CheckoutData {
     ward?: string;
     notes?: string;
   };
-  paymentMethod: 'COD' | 'BANKING' | 'ZALOPAY' | 'MOMO' | 'VNPAY'; // Added all payment methods
+  paymentMethod: 'COD' | 'BANKING' | 'ZALOPAY' | 'MOMO' | 'VNPAY';
 }
 
 export interface OrderSummary {
@@ -53,6 +56,30 @@ export interface OrderSummary {
   items: CartItemWithBook[];
 }
 
+// ZaloPay configuration
+const ZALOPAY_CONFIG = {
+  app_id: process.env.ZALOPAY_APP_ID || '',
+  key1: process.env.ZALOPAY_KEY1 || '',
+  key2: process.env.ZALOPAY_KEY2 || '',
+  endpoint: 'https://sb-open.zalopay.vn/v2/create',
+};
+
+// MoMo configuration
+const MOMO_CONFIG = {
+  partnerCode: process.env.MOMO_PARTNER_CODE || '',
+  accessKey: process.env.MOMO_ACCESS_KEY || '',
+  secretKey: process.env.MOMO_SECRET_KEY || '',
+  endpoint: 'https://test-payment.momo.vn/v2/gateway/api/create',
+};
+
+// VNPay configuration
+const VNPAY_CONFIG = {
+  tmnCode: process.env.VNPAY_TMN_CODE || '',
+  hashSecret: process.env.VNPAY_HASH_SECRET || '',
+  url: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+  returnUrl: process.env.VNPAY_RETURN_URL || 'http://localhost:3000/checkout/callback/vnpay',
+};
+
 // Get user's cart items with book details
 export async function getUserCartItems(clerkId: string): Promise<CartItemWithBook[]> {
   try {
@@ -62,7 +89,7 @@ export async function getUserCartItems(clerkId: string): Promise<CartItemWithBoo
       .where(and(eq(users.clerkId, clerkId), eq(users.isActive, true)))
       .limit(1);
 
-    if (!user[0]) throw new Error('User not found');
+    if (!user[0]) throw new Error('Người dùng không tồn tại');
 
     const cartItems = await db
       .select({
@@ -94,8 +121,8 @@ export async function getUserCartItems(clerkId: string): Promise<CartItemWithBoo
       },
     }));
   } catch (error) {
-    console.error('Error fetching cart items:', error);
-    throw new Error('Failed to fetch cart items');
+    console.error('Lỗi khi lấy giỏ hàng:', error);
+    throw new Error('Không thể lấy giỏ hàng');
   }
 }
 
@@ -149,7 +176,7 @@ export async function validateCoupon(code: string, orderAmount: number) {
       description: couponData.description || `Giảm ${formatVND(discountAmount)}`,
     };
   } catch (error) {
-    console.error('Error validating coupon:', error);
+    console.error('Lỗi khi kiểm tra mã giảm giá:', error);
     return { valid: false, error: 'Có lỗi xảy ra khi kiểm tra mã giảm giá' };
   }
 }
@@ -161,73 +188,173 @@ function generateOrderNumber(): string {
   return `ORD${timestamp.slice(-8)}${random}`;
 }
 
-// Comprehensive server-side validation function
+// Validate checkout data
 function validateCheckoutData(checkoutData: CheckoutData): string | null {
-  // Full name validation
-  if (!checkoutData.customerInfo.fullName?.trim()) {
-    return 'Vui lòng nhập họ và tên';
+  try {
+    checkoutSchema.parse(checkoutData);
+    return null; // Valid
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      // Return first error
+      return error.errors[0]?.message || 'Dữ liệu không hợp lệ';
+    }
+    return 'Có lỗi xảy ra khi kiểm tra dữ liệu';
   }
-  if (checkoutData.customerInfo.fullName.trim().length < 2) {
-    return 'Họ và tên phải có ít nhất 2 ký tự';
-  }
-  if (checkoutData.customerInfo.fullName.trim().length > 100) {
-    return 'Họ và tên không được quá 100 ký tự';
-  }
-
-  // Email validation
-  if (!checkoutData.customerInfo.email?.trim()) {
-    return 'Vui lòng nhập email';
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(checkoutData.customerInfo.email.trim())) {
-    return 'Email không hợp lệ';
-  }
-
-  // Phone validation
-  if (!checkoutData.customerInfo.phone?.trim()) {
-    return 'Vui lòng nhập số điện thoại';
-  }
-  const phoneClean = checkoutData.customerInfo.phone.replace(/\D/g, '');
-  if (!/^[0-9]{10,11}$/.test(phoneClean)) {
-    return 'Số điện thoại phải có 10-11 chữ số';
-  }
-
-  // Address validation
-  if (!checkoutData.customerInfo.address?.trim()) {
-    return 'Vui lòng nhập địa chỉ';
-  }
-  if (checkoutData.customerInfo.address.trim().length < 5) {
-    return 'Địa chỉ phải có ít nhất 5 ký tự';
-  }
-  if (checkoutData.customerInfo.address.trim().length > 200) {
-    return 'Địa chỉ không được quá 200 ký tự';
-  }
-
-  // City validation
-  if (!checkoutData.customerInfo.city?.trim()) {
-    return 'Vui lòng nhập tỉnh/thành phố';
-  }
-
-  // District validation
-  if (!checkoutData.customerInfo.district?.trim()) {
-    return 'Vui lòng nhập quận/huyện';
-  }
-
-  // Notes validation (optional)
-  if (checkoutData.customerInfo.notes && checkoutData.customerInfo.notes.length > 500) {
-    return 'Ghi chú không được quá 500 ký tự';
-  }
-
-  // Payment method validation
-  const validPaymentMethods = ['COD', 'BANKING', 'ZALOPAY', 'MOMO', 'VNPAY'];
-  if (!validPaymentMethods.includes(checkoutData.paymentMethod)) {
-    return 'Vui lòng chọn phương thức thanh toán hợp lệ';
-  }
-
-  return null; // No validation errors
 }
 
-// Create order with comprehensive server-side validation
+// Create ZaloPay payment
+async function createZaloPayPayment(order: any, checkoutData: CheckoutData, orderSummary: OrderSummary) {
+  const transId = generateOrderNumber();
+  const embedData = {
+    redirecturl: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/callback/zalopay`,
+  };
+  const items = orderSummary.items.map(item => ({
+    itemid: item.bookId.toString(),
+    itemname: item.book.title,
+    itemprice: calculateItemPrice(item),
+    itemquantity: item.quantity,
+  }));
+
+  const orderData = {
+    app_id: ZALOPAY_CONFIG.app_id,
+    app_user: checkoutData.customerInfo.email,
+    app_time: Date.now(),
+    amount: orderSummary.total,
+    app_trans_id: `${new Date().toISOString().slice(0, 10).replace(/-/, '')}_${transId}`,
+    embed_data: JSON.stringify(embedData),
+    items: JSON.stringify(items),
+    bank_code: '',
+    description: `Thanh toán đơn hàng ${order.orderNumber}`,
+    mac: '',
+  };
+
+  const data = `${orderData.app_id}|${orderData.app_trans_id}|${orderData.app_user}|${orderData.amount}|${orderData.app_time}|${orderData.embed_data}|${orderData.items}`;
+  orderData.mac = crypto.createHmac('sha256', ZALOPAY_CONFIG.key1).update(data).digest('hex');
+
+  try {
+    const response = await axios.post(ZALOPAY_CONFIG.endpoint, orderData);
+    return { paymentUrl: response.data.order_url, transId: orderData.app_trans_id };
+  } catch (error) {
+    console.error('Lỗi khi tạo thanh toán ZaloPay:', error);
+    throw new Error('Không thể tạo thanh toán ZaloPay');
+  }
+}
+
+// Create MoMo payment
+async function createMoMoPayment(order: any, checkoutData: CheckoutData, orderSummary: OrderSummary) {
+  const requestId = generateOrderNumber();
+  const orderId = `MM${order.orderNumber}`;
+  const orderInfo = `Thanh toán đơn hàng ${order.orderNumber}`;
+  const redirectUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/callback/momo`;
+  const ipnUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/momo`;
+  const requestType = 'captureWallet';
+
+  const rawSignature = `accessKey=${MOMO_CONFIG.accessKey}&amount=${orderSummary.total}&extraData=&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${MOMO_CONFIG.partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+  const signature = crypto.createHmac('sha256', MOMO_CONFIG.secretKey).update(rawSignature).digest('hex');
+
+  const data = {
+    partnerCode: MOMO_CONFIG.partnerCode,
+    partnerName: 'VMedBook',
+    storeId: 'VMedBook',
+    requestId,
+    amount: orderSummary.total,
+    orderId,
+    orderInfo,
+    redirectUrl,
+    ipnUrl,
+    lang: 'vi',
+    requestType,
+    autoCapture: true,
+    extraData: '',
+    signature,
+  };
+
+  try {
+    const response = await axios.post(MOMO_CONFIG.endpoint, data);
+    return { paymentUrl: response.data.payUrl, transId: orderId };
+  } catch (error) {
+    console.error('Lỗi khi tạo thanh toán MoMo:', error);
+    throw new Error('Không thể tạo thanh toán MoMo');
+  }
+}
+
+// Create VNPay payment
+async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderSummary: OrderSummary) {
+  const createDate = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+  const orderId = order.orderNumber;
+  const params = new URLSearchParams({
+    vnp_Version: '2.1.0',
+    vnp_Command: 'pay',
+    vnp_TmnCode: VNPAY_CONFIG.tmnCode,
+    vnp_Amount: (orderSummary.total * 100).toString(),
+    vnp_CurrCode: 'VND',
+    vnp_TxnRef: orderId,
+    vnp_OrderInfo: `Thanh toán đơn hàng ${orderId}`,
+    vnp_OrderType: 'billpayment',
+    vnp_Locale: 'vn',
+    vnp_ReturnUrl: VNPAY_CONFIG.returnUrl,
+    vnp_IpAddr: '127.0.0.1',
+    vnp_CreateDate: createDate,
+  });
+
+  const sortedParams = new URLSearchParams([...params.entries()].sort());
+  const signData = sortedParams.toString();
+  const secureHash = crypto.createHmac('sha512', VNPAY_CONFIG.hashSecret).update(signData).digest('hex');
+  params.append('vnp_SecureHash', secureHash);
+
+  const paymentUrl = `${VNPAY_CONFIG.url}?${params.toString()}`;
+  return { paymentUrl, transId: orderId };
+}
+
+// Atomic stock check and reserve
+async function reserveBookStock(items: CartItemWithBook[]): Promise<{ success: boolean; error?: string }> {
+  for (const item of items) {
+    // Use atomic update with condition
+    const result = await db
+      .update(books)
+      .set({
+        availableCopies: sql`${books.availableCopies} - ${item.quantity}`,
+        updatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(books.id, item.bookId),
+          gte(books.availableCopies, item.quantity) // Only update if sufficient stock
+        )
+      )
+      .returning({ id: books.id, newStock: books.availableCopies });
+
+    if (result.length === 0) {
+      // Rollback previously reserved books
+      await rollbackBookReservation(items.slice(0, items.indexOf(item)));
+      return { 
+        success: false, 
+        error: `Sách "${item.book.title}" không đủ số lượng trong kho` 
+      };
+    }
+  }
+  return { success: true };
+}
+
+// Rollback book reservation
+async function rollbackBookReservation(items: CartItemWithBook[]) {
+  for (const item of items) {
+    try {
+      await db
+        .update(books)
+        .set({
+          availableCopies: sql`${books.availableCopies} + ${item.quantity}`,
+          updatedAt: new Date()
+        })
+        .where(eq(books.id, item.bookId));
+    } catch (error) {
+      console.error(`Failed to rollback stock for book ${item.bookId}:`, error);
+      // Log for admin manual fix
+    }
+  }
+}
+
+// Create order with improved error handling and atomic operations
 export async function createOrder(
   clerkId: string,
   checkoutData: CheckoutData,
@@ -235,13 +362,13 @@ export async function createOrder(
   couponData?: any,
 ) {
   try {
-    // Server-side validation using the comprehensive validation function
+    // Validation
     const validationError = validateCheckoutData(checkoutData);
     if (validationError) {
       throw new Error(validationError);
     }
 
-    // Additional business logic validations
+    // Business logic validations
     if (orderSummary.items.length === 0) {
       throw new Error('Giỏ hàng trống');
     }
@@ -250,7 +377,6 @@ export async function createOrder(
       throw new Error('Tổng đơn hàng không hợp lệ');
     }
 
-    // Check if order requires premium payment method (orders >= 1M VND)
     if (orderSummary.total >= 1000000 && checkoutData.paymentMethod === 'COD') {
       throw new Error('Đơn hàng trên 1,000,000₫ yêu cầu thanh toán trước');
     }
@@ -264,26 +390,23 @@ export async function createOrder(
 
     if (!user[0]) throw new Error('Người dùng không tồn tại');
 
-    // Check stock availability for all items
-    for (const item of orderSummary.items) {
-      const currentBook = await db
-        .select({ availableCopies: books.availableCopies })
-        .from(books)
-        .where(eq(books.id, item.bookId))
-        .limit(1);
-
-      if (!currentBook[0] || currentBook[0].availableCopies < item.quantity) {
-        throw new Error(`Sách "${item.book.title}" không đủ số lượng trong kho`);
-      }
+    // Step 1: Reserve stock atomically
+    const stockReservation = await reserveBookStock(orderSummary.items);
+    if (!stockReservation.success) {
+      throw new Error(stockReservation.error);
     }
 
-    const result = await db.transaction(async (tx) => {
-      // Create order
-      const [order] = await tx
+    let order;
+    let shouldRollbackStock = true;
+
+    try {
+      // Step 2: Create order
+      [order] = await db
         .insert(orders)
         .values({
           orderNumber: generateOrderNumber(),
           userId: clerkId,
+          shippingAddressId: null,
           shippingFullName: checkoutData.customerInfo.fullName.trim(),
           shippingPhone: checkoutData.customerInfo.phone.replace(/\D/g, ''),
           shippingEmail: checkoutData.customerInfo.email.trim().toLowerCase(),
@@ -291,73 +414,264 @@ export async function createOrder(
           shippingCity: checkoutData.customerInfo.city.trim(),
           shippingDistrict: checkoutData.customerInfo.district.trim(),
           shippingWard: checkoutData.customerInfo.ward?.trim() || null,
-          subtotal: orderSummary.subtotal,
-          shippingFee: orderSummary.shippingFee,
-          couponDiscount: orderSummary.couponDiscount,
-          totalAmount: orderSummary.total,
+          subtotal: Math.floor(orderSummary.subtotal),
+          shippingFee: Math.floor(orderSummary.shippingFee),
+          couponDiscount: Math.floor(orderSummary.couponDiscount),
+          totalAmount: Math.floor(orderSummary.total),
           couponId: couponData?.id || null,
           couponCode: couponData?.code || null,
           paymentMethod: checkoutData.paymentMethod,
+          paymentStatus: 'PENDING',
+          paymentTransactionId: null,
+          transactionId: null,
+          status: 'PENDING',
           notes: checkoutData.customerInfo.notes?.trim() || null,
           createdAt: new Date(),
+          updatedAt: null,
+          shippedAt: null,
+          deliveredAt: null,
         })
         .returning();
 
-      // Create order items
+      // Step 3: Create order items
       const orderItemsData = orderSummary.items.map((item) => ({
         orderId: order.id,
         bookId: item.bookId,
         quantity: item.quantity,
         version: item.version,
-        unitPrice: calculateItemPrice(item) / item.quantity,
-        totalPrice: calculateItemPrice(item),
+        unitPrice: Math.floor(calculateItemPrice(item) / item.quantity),
+        totalPrice: Math.floor(calculateItemPrice(item)),
         createdAt: new Date(),
       }));
+      await db.insert(orderItems).values(orderItemsData);
 
-      await tx.insert(orderItems).values(orderItemsData);
-
-      // Update coupon usage count if applicable
+      // Step 4: Update coupon usage (if applicable)
       if (couponData?.id) {
-        await tx
+        await db
           .update(coupons)
-          .set({ usedCount: (couponData.usedCount || 0) + 1 })
+          .set({ 
+            usedCount: sql`${coupons.usedCount} + 1`,
+           
+          })
           .where(eq(coupons.id, couponData.id));
       }
 
-      // Clear user's cart
-      await tx.delete(carts).where(eq(carts.userId, clerkId));
+      // Step 5: Handle payment initialization
+      let paymentResult;
+      if (checkoutData.paymentMethod !== 'COD') {
+        if (checkoutData.paymentMethod === 'ZALOPAY') {
+          paymentResult = await createZaloPayPayment(order, checkoutData, orderSummary);
+        } else if (checkoutData.paymentMethod === 'MOMO') {
+          paymentResult = await createMoMoPayment(order, checkoutData, orderSummary);
+        } else if (checkoutData.paymentMethod === 'VNPAY') {
+          paymentResult = await createVNPayPayment(order, checkoutData, orderSummary);
+        }
 
-      // Update book inventory
-      for (const item of orderSummary.items) {
-        await tx
-          .update(books)
-          .set({
-            availableCopies: Math.max(0, item.book.availableCopies - item.quantity),
-          })
-          .where(eq(books.id, item.bookId));
+        // Update order with payment info
+        if (paymentResult) {
+          await db
+            .update(orders)
+            .set({
+              transactionId: paymentResult.transId,
+              paymentTransactionId: paymentResult.transId,
+              updatedAt: new Date()
+            })
+            .where(eq(orders.id, order.id));
+        }
       }
 
-      return order;
-    });
+      // Step 6: Clear user's cart (only when everything succeeds)
+      await db.delete(carts).where(eq(carts.userId, clerkId));
 
-    return result;
-  } catch (error) {
-    console.error('Error creating order:', error);
+      // Success - no need to rollback stock
+      shouldRollbackStock = false;
+
+      return { 
+        order, 
+        paymentUrl: paymentResult?.paymentUrl 
+      };
+
+    } catch (error) {
+      console.error('Error in order creation process:', error);
+      
+      // Cleanup order if created
+      if (order?.id) {
+        try {
+          await db.delete(orderItems).where(eq(orderItems.orderId, order.id));
+          await db.delete(orders).where(eq(orders.id, order.id));
+          
+          // Rollback coupon if updated
+          if (couponData?.id) {
+            await db
+              .update(coupons)
+              .set({ 
+                usedCount: sql`GREATEST(0, ${coupons.usedCount} - 1)`,
+                
+              })
+              .where(eq(coupons.id, couponData.id));
+          }
+        } catch (cleanupError) {
+          console.error('Cleanup failed:', cleanupError);
+        }
+      }
+      
+      throw error;
+    } finally {
+      // Rollback stock reservation if needed
+      if (shouldRollbackStock) {
+        await rollbackBookReservation(orderSummary.items);
+      }
+    }
+
+  } catch (error: any) {
+    console.error('Lỗi khi tạo đơn hàng:', error);
     
-    // Re-throw with original message if it's a validation error, otherwise use generic message
-    if (error instanceof Error && (
-      error.message.includes('Vui lòng') || 
-      error.message.includes('không hợp lệ') ||
-      error.message.includes('không được') ||
-      error.message.includes('phải có') ||
-      error.message.includes('yêu cầu') ||
-      error.message.includes('không đủ') ||
-      error.message.includes('trống') ||
-      error.message.includes('không tồn tại')
-    )) {
+    // User-friendly error messages
+    if (error.message.includes('Vui lòng') || 
+        error.message.includes('không hợp lệ') ||
+        error.message.includes('không được') ||
+        error.message.includes('phải có') ||
+        error.message.includes('yêu cầu') ||
+        error.message.includes('không đủ') ||
+        error.message.includes('trống') ||
+        error.message.includes('không tồn tại')) {
       throw error;
     }
     
     throw new Error('Không thể tạo đơn hàng. Vui lòng thử lại.');
+  }
+}
+
+// Check order consistency (can run periodically)
+export async function validateOrderConsistency(orderId: number) {
+  const order = await db
+    .select()
+    .from(orders)
+    .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
+    .where(eq(orders.id, orderId));
+
+  if (!order.length) return { valid: false, error: 'Order not found' };
+
+  const calculatedTotal = order.reduce((sum, item) => {
+    return sum + (item.order_items?.totalPrice || 0);
+  }, 0);
+
+  const actualTotal = order[0].orders.subtotal + order[0].orders.shippingFee - order[0].orders.couponDiscount;
+
+  return {
+    valid: Math.abs(calculatedTotal - actualTotal) < 1, // Allow 1 VND difference for rounding
+    calculatedTotal,
+    actualTotal,
+    difference: Math.abs(calculatedTotal - actualTotal)
+  };
+}
+
+// Handle ZaloPay callback
+export async function handleZaloPayCallback(data: any, mac: string) {
+  const dataStr = JSON.stringify(data);
+  const verifyMac = crypto.createHmac('sha256', ZALOPAY_CONFIG.key2).update(dataStr).digest('hex');
+  if (verifyMac !== mac) {
+    throw new Error('Chữ ký ZaloPay không hợp lệ');
+  }
+
+  const order = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.transactionId, data.app_trans_id))
+    .limit(1);
+
+  if (!order[0]) {
+    throw new Error('Đơn hàng không tồn tại');
+  }
+
+  if (data.status === 1) {
+    await db
+      .update(orders)
+      .set({ paymentStatus: 'PAID', updatedAt: new Date() })
+      .where(eq(orders.id, order[0].id));
+    return { success: true, orderId: order[0].orderNumber };
+  } else {
+    await db
+      .update(orders)
+      .set({ paymentStatus: 'FAILED', updatedAt: new Date() })
+      .where(eq(orders.id, order[0].id));
+    throw new Error('Thanh toán ZaloPay thất bại');
+  }
+}
+
+// Handle MoMo callback
+export async function handleMoMoCallback(data: any) {
+  const rawSignature = `accessKey=${MOMO_CONFIG.accessKey}&amount=${data.amount}&extraData=${data.extraData}&message=${data.message}&orderId=${data.orderId}&orderInfo=${data.orderInfo}&orderType=${data.orderType}&partnerCode=${data.partnerCode}&payType=${data.payType}&requestId=${data.requestId}&responseTime=${data.responseTime}&resultCode=${data.resultCode}&transId=${data.transId}`;
+  const signature = crypto.createHmac('sha256', MOMO_CONFIG.secretKey).update(rawSignature).digest('hex');
+
+  if (signature !== data.signature) {
+    throw new Error('Chữ ký MoMo không hợp lệ');
+  }
+
+  const order = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.transactionId, data.orderId))
+    .limit(1);
+
+  if (!order[0]) {
+    throw new Error('Đơn hàng không tồn tại');
+  }
+
+  if (data.resultCode === 0) {
+    await db
+      .update(orders)
+      .set({ paymentStatus: 'PAID', updatedAt: new Date() })
+      .where(eq(orders.id, order[0].id));
+    return { success: true, orderId: order[0].orderNumber };
+  } else {
+    await db
+      .update(orders)
+      .set({ paymentStatus: 'FAILED', updatedAt: new Date() })
+      .where(eq(orders.id, order[0].id));
+    throw new Error('Thanh toán MoMo thất bại');
+  }
+}
+
+// Handle VNPay callback
+export async function handleVNPayCallback(params: any) {
+  const secureHash = params.vnp_SecureHash;
+  delete params.vnp_SecureHash;
+  delete params.vnp_SecureHashType;
+
+  const sortedParams = new URLSearchParams(
+    Object.entries(params)
+      .sort()
+      .map(([k, v]) => [k, v?.toString() ?? ''])
+  );
+  const signData = sortedParams.toString();
+  const checkSum = crypto.createHmac('sha512', VNPAY_CONFIG.hashSecret).update(signData).digest('hex');
+
+  if (checkSum !== secureHash) {
+    throw new Error('Chữ ký VNPay không hợp lệ');
+  }
+
+  const order = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.transactionId, params.vnp_TxnRef))
+    .limit(1);
+
+  if (!order[0]) {
+    throw new Error('Đơn hàng không tồn tại');
+  }
+
+  if (params.vnp_ResponseCode === '00') {
+    await db
+      .update(orders)
+      .set({ paymentStatus: 'PAID', updatedAt: new Date() })
+      .where(eq(orders.id, order[0].id));
+    return { success: true, orderId: order[0].orderNumber };
+  } else {
+    await db
+      .update(orders)
+      .set({ paymentStatus: 'FAILED', updatedAt: new Date() })
+      .where(eq(orders.id, order[0].id));
+    throw new Error('Thanh toán VNPay thất bại');
   }
 }

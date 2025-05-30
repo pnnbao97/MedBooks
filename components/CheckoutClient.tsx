@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,9 +59,11 @@ type PaymentMethod = 'COD' | 'BANKING' | 'ZALOPAY' | 'MOMO' | 'VNPAY';
 const CheckoutClient = ({ userId }: CheckoutClientProps) => {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { items: cartItems, fetchCart } = useCartStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   // Initialize form with shadcn/ui form and zod
   const form = useForm<CheckoutFormData>({
@@ -114,6 +116,17 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
     }
   }, [user, form]);
 
+  // Handle payment callback
+  useEffect(() => {
+    const paymentStatus = searchParams.get('status');
+    const orderNumber = searchParams.get('order');
+    if (paymentStatus === 'success' && orderNumber) {
+      router.push(`/checkout/success?order=${orderNumber}`);
+    } else if (paymentStatus === 'failed') {
+      setPaymentError('Thanh toán không thành công. Vui lòng thử lại.');
+    }
+  }, [searchParams, router]);
+
   const orderSummary = useMemo(() => {
     if (cartItems.length > 0) {
       const safeCartItems = cartItems.map(item => ({
@@ -128,12 +141,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
     return null;
   }, [cartItems, couponDiscount]);
 
-  // Check if order amount requires premium payment methods
   const requiresPremiumPayment = useMemo(() => {
     return orderSummary ? orderSummary.total >= 1000000 : false;
   }, [orderSummary]);
 
-  // Update payment method when order total changes
   useEffect(() => {
     const currentPaymentMethod = form.getValues('paymentMethod');
     if (requiresPremiumPayment && currentPaymentMethod === 'COD') {
@@ -141,11 +152,11 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
     }
   }, [requiresPremiumPayment, form]);
 
-  // Handle form submission
   const onSubmit = async (data: CheckoutFormData) => {
     if (!orderSummary || !user?.id) return;
 
     setIsSubmitting(true);
+    setPaymentError(null);
     try {
       let couponData;
       if (couponDiscount > 0 && couponCode) {
@@ -158,13 +169,15 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
         paymentMethod: data.paymentMethod,
       };
 
-      const order = await createOrder(user.id, checkoutData, orderSummary, couponData);
-      router.push(`/checkout/success?order=${order.orderNumber}`);
-    } catch (error) {
+      const result = await createOrder(user.id, checkoutData, orderSummary, couponData);
+      if (result.paymentUrl) {
+        window.location.href = result.paymentUrl; // Redirect to payment gateway
+      } else {
+        router.push(`/checkout/success?order=${result.order.orderNumber}`);
+      }
+    } catch (error: any) {
       console.error('Order creation failed:', error);
-      form.setError('root', {
-        message: 'Không thể tạo đơn hàng. Vui lòng thử lại.',
-      });
+      setPaymentError(error.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -214,7 +227,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50">
-      {/* Header Section */}
       <div className="bg-gradient-to-r from-blue-700 via-blue-950 to-slate-800 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
@@ -236,9 +248,7 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-              {/* Main Content */}
               <div className="lg:col-span-2 space-y-10">
-                {/* Shipping Address */}
                 <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
                   <div className="bg-gradient-to-r from-blue-600 to-blue-950 p-6">
                     <div className="flex items-center gap-4">
@@ -275,10 +285,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-4 h-4" />
-                                {form.formState.errors.customerInfo?.fullName?.message}
-                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -299,10 +305,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-4 h-4" />
-                                {form.formState.errors.customerInfo?.phone?.message}
-                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -324,10 +326,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-4 h-4" />
-                                {form.formState.errors.customerInfo?.email?.message}
-                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -348,10 +346,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-4 h-4" />
-                                {form.formState.errors.customerInfo?.address?.message}
-                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -369,10 +363,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors bg-white font-medium"
                                 />
                               </FormControl>
-                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-4 h-4" />
-                                {form.formState.errors.customerInfo?.city?.message}
-                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -390,10 +380,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-4 h-4" />
-                                {form.formState.errors.customerInfo?.district?.message}
-                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -411,10 +397,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors bg-white font-medium"
                                 />
                               </FormControl>
-                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-4 h-4" />
-                                {form.formState.errors.customerInfo?.ward?.message}
-                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -433,10 +415,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors resize-none bg-white font-medium"
                                 />
                               </FormControl>
-                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                                <AlertCircle className="w-4 h-4" />
-                                {form.formState.errors.customerInfo?.notes?.message}
-                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -445,7 +423,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                   </div>
                 </div>
 
-                {/* Payment Method */}
                 <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
                   <div className="bg-gradient-to-r from-slate-700 to-slate-900 p-6">
                     <div className="flex items-center gap-4">
@@ -475,7 +452,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                               value={field.value}
                               className="space-y-6"
                             >
-                              {/* COD - Only for orders under 1M */}
                               {!requiresPremiumPayment && (
                                 <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-orange-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                                   <div className="flex items-center space-x-4">
@@ -500,7 +476,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                 </div>
                               )}
 
-                              {/* Banking */}
                               <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                                 <div className="flex items-center space-x-4">
                                   <RadioGroupItem value="BANKING" id="banking" className="w-5 h-5 border-2 border-teal-500" />
@@ -518,7 +493,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                 </div>
                               </div>
 
-                              {/* ZaloPay */}
                               <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                                 <div className="flex items-center space-x-4">
                                   <RadioGroupItem value="ZALOPAY" id="zalopay" className="w-5 h-5 border-2 border-blue-500" />
@@ -536,7 +510,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                 </div>
                               </div>
 
-                              {/* MoMo */}
                               <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-pink-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                                 <div className="flex items-center space-x-4">
                                   <RadioGroupItem value="MOMO" id="momo" className="w-5 h-5 border-2 border-pink-500" />
@@ -554,7 +527,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                 </div>
                               </div>
 
-                              {/* VNPay */}
                               <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-red-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                                 <div className="flex items-center space-x-4">
                                   <RadioGroupItem value="VNPAY" id="vnpay" className="w-5 h-5 border-2 border-red-500" />
@@ -573,17 +545,12 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                               </div>
                             </RadioGroup>
                           </FormControl>
-                          {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
-                            <AlertCircle className="w-4 h-4" />
-                            {form.formState.errors.paymentMethod?.message}
-                          </FormMessage> */}
                         </FormItem>
                       )}
                     />
                   </div>
                 </div>
 
-                {/* Coupon */}
                 <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden">
                   <div className="bg-gradient-to-r from-amber-600 to-red-950 p-6">
                     <div className="flex items-center gap-4">
@@ -633,16 +600,14 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                   </div>
                 </div>
 
-                {/* Submit Error */}
-                {form.formState.errors.root && (
+                {paymentError && (
                   <Alert className="mt-3" variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
+                    <AlertDescription>{paymentError}</AlertDescription>
                   </Alert>
                 )}
               </div>
 
-              {/* Order Summary Sidebar */}
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-3xl shadow-xl border border-blue-100 overflow-hidden sticky top-4">
                   <div className="bg-gradient-to-r from-blue-500 to-blue-950 p-6">
@@ -658,7 +623,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                   </div>
 
                   <div className="p-8 space-y-6">
-                    {/* Cart Items */}
                     <div className="space-y-4">
                       {cartItems.map((item) => {
                         const safeItem = {
@@ -696,7 +660,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
 
                     <Separator className="bg-blue-200" />
 
-                    {/* Order Totals */}
                     {orderSummary && (
                       <div className="space-y-4">
                         <div className="flex justify-between text-base text-gray-700">
@@ -731,7 +694,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                       </div>
                     )}
 
-                    {/* Free Shipping Notice */}
                     {orderSummary && orderSummary.subtotal < 500000 && (
                       <Alert className="border-blue-200 bg-blue-50 rounded-xl">
                         <Truck className="h-5 w-5 text-blue-500" />
@@ -741,7 +703,6 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                       </Alert>
                     )}
 
-                    {/* Place Order Button */}
                     <Button
                       type="submit"
                       disabled={isSubmitting || isLoading}

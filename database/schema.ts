@@ -155,7 +155,7 @@ export const orders = pgTable("orders", {
   paymentMethod: PAYMENT_METHOD_ENUM("payment_method").notNull(),
   paymentStatus: PAYMENT_STATUS_ENUM("payment_status").notNull().default("PENDING"),
   paymentTransactionId: varchar("payment_transaction_id", { length: 255 }),
-  
+  transactionId: text('transaction_id'),
   // Order status and notes
   status: ORDER_STATUS_ENUM("status").notNull().default("PENDING"),
   notes: text('notes'),
