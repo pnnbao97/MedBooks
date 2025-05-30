@@ -287,36 +287,26 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
   const formatDate = (date: Date) =>
     date.toISOString().replace(/[-:T.]/g, '').slice(0, 14);
 
-  const params = new URLSearchParams({
-    vnp_Version: '2.1.0',
+  // Tạo object params theo thứ tự alphabet như trong URL mẫu
+  const paramsObj = {
+    vnp_Amount: (orderSummary.total * 100).toString(),
     vnp_Command: 'pay',
-    vnp_TmnCode: VNPAY_CONFIG.tmnCode,
-    vnp_Amount: (orderSummary.total * 100).toString(), // Amount in VND cents
-    vnp_CurrCode: 'VND',
-    vnp_TxnRef: orderId.toString(),
-    vnp_OrderInfo: `Thanh toan don hang :${orderId}`, // Không encode ở đây
-    vnp_OrderType: 'other', // Đổi từ 'billpayment' thành 'other' như mẫu
-    vnp_Locale: 'vn',
-    vnp_ReturnUrl: 'https://vmedbook.com/checkout/callback/vnpay',
-    vnp_IpAddr: '127.0.0.1',
     vnp_CreateDate: formatDate(createDate),
-  });
+    vnp_CurrCode: 'VND',
+    vnp_IpAddr: '127.0.0.1',
+    vnp_Locale: 'vn',
+    vnp_OrderInfo: `Thanh toan don hang :${orderId}`,
+    vnp_OrderType: 'other',
+    vnp_ReturnUrl: 'https://vmedbook.com/checkout/callback/vnpay',
+    vnp_TmnCode: VNPAY_CONFIG.tmnCode,
+    vnp_TxnRef: orderId.toString(),
+    vnp_Version: '2.1.0'
+  };
 
-  // Bỏ các tham số không có trong mẫu URL
-  // - vnp_ExpireDate
-  // - vnp_Bill_* (các thông tin billing)
-
-  // Sort parameters alphabetically theo key
-  const sortedParams = new URLSearchParams();
-  const sortedKeys = Array.from(params.keys()).sort();
-  
-  sortedKeys.forEach(key => {
-    sortedParams.append(key, params.get(key) || '');
-  });
-
-  // Tạo chuỗi để hash (không encode URL)
+  // Sort parameters alphabetically và tạo signData
+  const sortedKeys = Object.keys(paramsObj).sort();
   const signData = sortedKeys
-    .map(key => `${key}=${params.get(key)}`)
+    .map(key => `${key}=${paramsObj[key as keyof typeof paramsObj]}`)
     .join('&');
 
   const secureHash = crypto
@@ -324,10 +314,14 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
     .update(signData)
     .digest('hex');
 
-  // Append secure hash to parameters
-  sortedParams.append('vnp_SecureHash', secureHash);
+  // Tạo URLSearchParams và thêm các tham số theo thứ tự
+  const params = new URLSearchParams();
+  sortedKeys.forEach(key => {
+    params.append(key, paramsObj[key as keyof typeof paramsObj]);
+  });
+  params.append('vnp_SecureHash', secureHash);
 
-  const paymentUrl = `${VNPAY_CONFIG.url}?${sortedParams.toString()}`;
+  const paymentUrl = `${VNPAY_CONFIG.url}?${params.toString()}`;
   return { paymentUrl, transId: orderId };
 }
 
