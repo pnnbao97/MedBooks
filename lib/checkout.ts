@@ -280,62 +280,52 @@ async function createMoMoPayment(order: any, checkoutData: CheckoutData, orderSu
 
 // Create VNPay payment
 async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderSummary: OrderSummary) {
-  const createDate = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+  const createDate = new Date();
+  const expireDate = new Date(createDate.getTime() + 15 * 60 * 1000); // 15 minutes from now
   const orderId = order.orderNumber;
+
+  // Format dates as YYYYMMDDHHMMSS
+  const formatDate = (date: Date) =>
+    date.toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+
   const params = new URLSearchParams({
     vnp_Version: '2.1.0',
     vnp_Command: 'pay',
     vnp_TmnCode: VNPAY_CONFIG.tmnCode,
-    vnp_Amount: (orderSummary.total * 100).toString(),
+    vnp_Amount: (orderSummary.total * 100).toString(), // Multiply by 100 to remove decimal
     vnp_CurrCode: 'VND',
     vnp_TxnRef: orderId,
-    vnp_OrderInfo: `Thanh toán đơn hàng ${orderId}`,
+    vnp_OrderInfo: encodeURIComponent(`Thanh toan don hang ${orderId}`),
     vnp_OrderType: 'billpayment',
     vnp_Locale: 'vn',
-    vnp_ReturnUrl: VNPAY_CONFIG.returnUrl,
-    vnp_IpAddr: '127.0.0.1',
-    vnp_CreateDate: createDate,
+    vnp_ReturnUrl: 'https://vmedbook.com/checkout/callback/vnpay',
+    vnp_IpAddr: '127.0.0.1', // You may want to get actual client IP in production
+    vnp_CreateDate: formatDate(createDate),
+    vnp_ExpireDate: formatDate(expireDate),
+    // Optional billing information
+    vnp_Bill_Mobile: checkoutData.customerInfo.phone.replace(/\D/g, ''),
+    vnp_Bill_Email: encodeURIComponent(checkoutData.customerInfo.email.trim().toLowerCase()),
+    vnp_Bill_FirstName: encodeURIComponent(checkoutData.customerInfo.fullName.split(' ').slice(0, -1).join(' ')),
+    vnp_Bill_LastName: encodeURIComponent(checkoutData.customerInfo.fullName.split(' ').pop() || ''),
+    vnp_Bill_Address: encodeURIComponent(checkoutData.customerInfo.address.trim()),
+    vnp_Bill_City: encodeURIComponent(checkoutData.customerInfo.city.trim()),
+    vnp_Bill_Country: 'VN',
   });
 
+  // Sort parameters alphabetically
   const sortedParams = new URLSearchParams([...params.entries()].sort());
   const signData = sortedParams.toString();
-  const secureHash = crypto.createHmac('sha512', VNPAY_CONFIG.hashSecret).update(signData).digest('hex');
+  const secureHash = crypto
+    .createHmac('sha512', VNPAY_CONFIG.hashSecret)
+    .update(signData)
+    .digest('hex');
+
+  // Append secure hash to parameters
   params.append('vnp_SecureHash', secureHash);
 
   const paymentUrl = `${VNPAY_CONFIG.url}?${params.toString()}`;
   return { paymentUrl, transId: orderId };
 }
-
-// Atomic stock check and reserve
-async function reserveBookStock(items: CartItemWithBook[]): Promise<{ success: boolean; error?: string }> {
-  for (const item of items) {
-    // Use atomic update with condition
-    const result = await db
-      .update(books)
-      .set({
-        availableCopies: sql`${books.availableCopies} - ${item.quantity}`,
-        updatedAt: new Date()
-      })
-      .where(
-        and(
-          eq(books.id, item.bookId),
-          gte(books.availableCopies, item.quantity) // Only update if sufficient stock
-        )
-      )
-      .returning({ id: books.id, newStock: books.availableCopies });
-
-    if (result.length === 0) {
-      // Rollback previously reserved books
-      await rollbackBookReservation(items.slice(0, items.indexOf(item)));
-      return { 
-        success: false, 
-        error: `Sách "${item.book.title}" không đủ số lượng trong kho` 
-      };
-    }
-  }
-  return { success: true };
-}
-
 // Rollback book reservation
 async function rollbackBookReservation(items: CartItemWithBook[]) {
   for (const item of items) {
