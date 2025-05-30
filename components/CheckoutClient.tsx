@@ -275,10 +275,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                                 <AlertCircle className="w-4 h-4" />
                                 {form.formState.errors.customerInfo?.fullName?.message}
-                              </FormMessage>
+                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -299,10 +299,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                                 <AlertCircle className="w-4 h-4" />
                                 {form.formState.errors.customerInfo?.phone?.message}
-                              </FormMessage>
+                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -324,10 +324,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                                 <AlertCircle className="w-4 h-4" />
                                 {form.formState.errors.customerInfo?.email?.message}
-                              </FormMessage>
+                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -348,10 +348,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                                 <AlertCircle className="w-4 h-4" />
                                 {form.formState.errors.customerInfo?.address?.message}
-                              </FormMessage>
+                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -369,10 +369,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors bg-white font-medium"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                                 <AlertCircle className="w-4 h-4" />
                                 {form.formState.errors.customerInfo?.city?.message}
-                              </FormMessage>
+                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -390,10 +390,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 font-medium border-slate-300 focus:border-teal-500 transition-colors bg-white"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                                 <AlertCircle className="w-4 h-4" />
                                 {form.formState.errors.customerInfo?.district?.message}
-                              </FormMessage>
+                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -411,10 +411,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="h-12 rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors bg-white font-medium"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                                 <AlertCircle className="w-4 h-4" />
                                 {form.formState.errors.customerInfo?.ward?.message}
-                              </FormMessage>
+                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -433,10 +433,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                   className="rounded-xl border-2 border-slate-300 focus:border-teal-500 transition-colors resize-none bg-white font-medium"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                              {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                                 <AlertCircle className="w-4 h-4" />
                                 {form.formState.errors.customerInfo?.notes?.message}
-                              </FormMessage>
+                              </FormMessage> */}
                             </FormItem>
                           )}
                         />
@@ -573,10 +573,10 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                               </div>
                             </RadioGroup>
                           </FormControl>
-                          <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
+                          {/* <FormMessage className="text-sm text-red-600 flex items-center gap-1 font-medium">
                             <AlertCircle className="w-4 h-4" />
                             {form.formState.errors.paymentMethod?.message}
-                          </FormMessage>
+                          </FormMessage> */}
                         </FormItem>
                       )}
                     />
