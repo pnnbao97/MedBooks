@@ -1,3 +1,4 @@
+// File: lib/validations.ts
 import { z } from "zod";
 
 export const signUpSchema = z.object( {
@@ -107,3 +108,39 @@ export const bookSchema = z.object({
     message: "URL trang xem trước không hợp lệ",
     path: ["previewPages"]
 });
+
+// Add this to your existing lib/validations.ts file
+
+export const checkoutSchema = z.object({
+  customerInfo: z.object({
+    fullName: z.string()
+      .min(2, "Họ và tên phải có ít nhất 2 ký tự")
+      .max(100, "Họ và tên không được quá 100 ký tự")
+      .trim(),
+    email: z.string()
+      .min(1, "Vui lòng nhập email")
+      .email("Email không hợp lệ")
+      .trim(),
+    phone: z.string()
+      .min(1, "Vui lòng nhập số điện thoại")
+      .regex(/^[0-9]{10,11}$/, "Số điện thoại phải có 10-11 chữ số")
+      .transform(val => val.replace(/\D/g, '')),
+    address: z.string()
+      .min(5, "Địa chỉ phải có ít nhất 5 ký tự")
+      .max(200, "Địa chỉ không được quá 200 ký tự")
+      .trim(),
+    city: z.string()
+      .min(1, "Vui lòng nhập tỉnh/thành phố")
+      .trim(),
+    district: z.string()
+      .min(1, "Vui lòng nhập quận/huyện")
+      .trim(),
+    ward: z.string().optional(),
+    notes: z.string().max(500, "Ghi chú không được quá 500 ký tự").optional(),
+  }),
+  paymentMethod: z.enum(['COD', 'BANKING', 'ZALOPAY', 'MOMO', 'VNPAY'], {
+    required_error: "Vui lòng chọn phương thức thanh toán",
+  }),
+});
+
+export type CheckoutFormData = z.infer<typeof checkoutSchema>;

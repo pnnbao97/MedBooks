@@ -30,6 +30,7 @@ export interface CartItemWithBook {
   };
 }
 
+// Updated interface to match the validation schema
 export interface CheckoutData {
   customerInfo: {
     fullName: string;
@@ -41,8 +42,7 @@ export interface CheckoutData {
     ward?: string;
     notes?: string;
   };
-  paymentMethod: 'COD' | 'BANKING';
-  couponCode?: string;
+  paymentMethod: 'COD' | 'BANKING' | 'ZALOPAY' | 'MOMO' | 'VNPAY'; // Added all payment methods
 }
 
 export interface OrderSummary {
@@ -161,7 +161,73 @@ function generateOrderNumber(): string {
   return `ORD${timestamp.slice(-8)}${random}`;
 }
 
-// Create order with server-side validation
+// Comprehensive server-side validation function
+function validateCheckoutData(checkoutData: CheckoutData): string | null {
+  // Full name validation
+  if (!checkoutData.customerInfo.fullName?.trim()) {
+    return 'Vui lòng nhập họ và tên';
+  }
+  if (checkoutData.customerInfo.fullName.trim().length < 2) {
+    return 'Họ và tên phải có ít nhất 2 ký tự';
+  }
+  if (checkoutData.customerInfo.fullName.trim().length > 100) {
+    return 'Họ và tên không được quá 100 ký tự';
+  }
+
+  // Email validation
+  if (!checkoutData.customerInfo.email?.trim()) {
+    return 'Vui lòng nhập email';
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(checkoutData.customerInfo.email.trim())) {
+    return 'Email không hợp lệ';
+  }
+
+  // Phone validation
+  if (!checkoutData.customerInfo.phone?.trim()) {
+    return 'Vui lòng nhập số điện thoại';
+  }
+  const phoneClean = checkoutData.customerInfo.phone.replace(/\D/g, '');
+  if (!/^[0-9]{10,11}$/.test(phoneClean)) {
+    return 'Số điện thoại phải có 10-11 chữ số';
+  }
+
+  // Address validation
+  if (!checkoutData.customerInfo.address?.trim()) {
+    return 'Vui lòng nhập địa chỉ';
+  }
+  if (checkoutData.customerInfo.address.trim().length < 5) {
+    return 'Địa chỉ phải có ít nhất 5 ký tự';
+  }
+  if (checkoutData.customerInfo.address.trim().length > 200) {
+    return 'Địa chỉ không được quá 200 ký tự';
+  }
+
+  // City validation
+  if (!checkoutData.customerInfo.city?.trim()) {
+    return 'Vui lòng nhập tỉnh/thành phố';
+  }
+
+  // District validation
+  if (!checkoutData.customerInfo.district?.trim()) {
+    return 'Vui lòng nhập quận/huyện';
+  }
+
+  // Notes validation (optional)
+  if (checkoutData.customerInfo.notes && checkoutData.customerInfo.notes.length > 500) {
+    return 'Ghi chú không được quá 500 ký tự';
+  }
+
+  // Payment method validation
+  const validPaymentMethods = ['COD', 'BANKING', 'ZALOPAY', 'MOMO', 'VNPAY'];
+  if (!validPaymentMethods.includes(checkoutData.paymentMethod)) {
+    return 'Vui lòng chọn phương thức thanh toán hợp lệ';
+  }
+
+  return null; // No validation errors
+}
+
+// Create order with comprehensive server-side validation
 export async function createOrder(
   clerkId: string,
   checkoutData: CheckoutData,
@@ -169,56 +235,75 @@ export async function createOrder(
   couponData?: any,
 ) {
   try {
-    // Server-side validation
-    if (!checkoutData.customerInfo.fullName?.trim()) {
-      throw new Error('Thiếu thông tin họ tên');
-    }
-    if (!checkoutData.customerInfo.email?.trim() || !/\S+@\S+\.\S+/.test(checkoutData.customerInfo.email)) {
-      throw new Error('Email không hợp lệ');
-    }
-    if (!checkoutData.customerInfo.phone?.trim() || !/^[0-9]{10,11}$/.test(checkoutData.customerInfo.phone.replace(/\D/g, ''))) {
-      throw new Error('Số điện thoại không hợp lệ');
-    }
-    if (!checkoutData.customerInfo.address?.trim()) {
-      throw new Error('Thiếu thông tin địa chỉ');
-    }
-    if (!checkoutData.customerInfo.district?.trim()) {
-      throw new Error('Thiếu thông tin quận/huyện');
+    // Server-side validation using the comprehensive validation function
+    const validationError = validateCheckoutData(checkoutData);
+    if (validationError) {
+      throw new Error(validationError);
     }
 
+    // Additional business logic validations
+    if (orderSummary.items.length === 0) {
+      throw new Error('Giỏ hàng trống');
+    }
+
+    if (orderSummary.total <= 0) {
+      throw new Error('Tổng đơn hàng không hợp lệ');
+    }
+
+    // Check if order requires premium payment method (orders >= 1M VND)
+    if (orderSummary.total >= 1000000 && checkoutData.paymentMethod === 'COD') {
+      throw new Error('Đơn hàng trên 1,000,000₫ yêu cầu thanh toán trước');
+    }
+
+    // Verify user exists
     const user = await db
       .select()
       .from(users)
       .where(and(eq(users.clerkId, clerkId), eq(users.isActive, true)))
       .limit(1);
 
-    if (!user[0]) throw new Error('User not found');
+    if (!user[0]) throw new Error('Người dùng không tồn tại');
+
+    // Check stock availability for all items
+    for (const item of orderSummary.items) {
+      const currentBook = await db
+        .select({ availableCopies: books.availableCopies })
+        .from(books)
+        .where(eq(books.id, item.bookId))
+        .limit(1);
+
+      if (!currentBook[0] || currentBook[0].availableCopies < item.quantity) {
+        throw new Error(`Sách "${item.book.title}" không đủ số lượng trong kho`);
+      }
+    }
 
     const result = await db.transaction(async (tx) => {
+      // Create order
       const [order] = await tx
         .insert(orders)
         .values({
           orderNumber: generateOrderNumber(),
           userId: clerkId,
-          shippingFullName: checkoutData.customerInfo.fullName,
-          shippingPhone: checkoutData.customerInfo.phone,
-          shippingEmail: checkoutData.customerInfo.email,
-          shippingAddress: checkoutData.customerInfo.address,
-          shippingCity: checkoutData.customerInfo.city,
-          shippingDistrict: checkoutData.customerInfo.district,
-          shippingWard: checkoutData.customerInfo.ward,
+          shippingFullName: checkoutData.customerInfo.fullName.trim(),
+          shippingPhone: checkoutData.customerInfo.phone.replace(/\D/g, ''),
+          shippingEmail: checkoutData.customerInfo.email.trim().toLowerCase(),
+          shippingAddress: checkoutData.customerInfo.address.trim(),
+          shippingCity: checkoutData.customerInfo.city.trim(),
+          shippingDistrict: checkoutData.customerInfo.district.trim(),
+          shippingWard: checkoutData.customerInfo.ward?.trim() || null,
           subtotal: orderSummary.subtotal,
           shippingFee: orderSummary.shippingFee,
           couponDiscount: orderSummary.couponDiscount,
           totalAmount: orderSummary.total,
-          couponId: couponData?.id,
-          couponCode: couponData?.code,
+          couponId: couponData?.id || null,
+          couponCode: couponData?.code || null,
           paymentMethod: checkoutData.paymentMethod,
-          notes: checkoutData.customerInfo.notes,
+          notes: checkoutData.customerInfo.notes?.trim() || null,
           createdAt: new Date(),
         })
         .returning();
 
+      // Create order items
       const orderItemsData = orderSummary.items.map((item) => ({
         orderId: order.id,
         bookId: item.bookId,
@@ -231,15 +316,18 @@ export async function createOrder(
 
       await tx.insert(orderItems).values(orderItemsData);
 
-      if (couponData) {
+      // Update coupon usage count if applicable
+      if (couponData?.id) {
         await tx
           .update(coupons)
           .set({ usedCount: (couponData.usedCount || 0) + 1 })
           .where(eq(coupons.id, couponData.id));
       }
 
+      // Clear user's cart
       await tx.delete(carts).where(eq(carts.userId, clerkId));
 
+      // Update book inventory
       for (const item of orderSummary.items) {
         await tx
           .update(books)
@@ -255,6 +343,21 @@ export async function createOrder(
     return result;
   } catch (error) {
     console.error('Error creating order:', error);
-    throw new Error('Failed to create order');
+    
+    // Re-throw with original message if it's a validation error, otherwise use generic message
+    if (error instanceof Error && (
+      error.message.includes('Vui lòng') || 
+      error.message.includes('không hợp lệ') ||
+      error.message.includes('không được') ||
+      error.message.includes('phải có') ||
+      error.message.includes('yêu cầu') ||
+      error.message.includes('không đủ') ||
+      error.message.includes('trống') ||
+      error.message.includes('không tồn tại')
+    )) {
+      throw error;
+    }
+    
+    throw new Error('Không thể tạo đơn hàng. Vui lòng thử lại.');
   }
 }
