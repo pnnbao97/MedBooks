@@ -148,7 +148,7 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
   useEffect(() => {
     const currentPaymentMethod = form.getValues('paymentMethod');
     if (requiresPremiumPayment && currentPaymentMethod === 'COD') {
-      form.setValue('paymentMethod', 'BANKING');
+      form.setValue('paymentMethod', 'VNPAY');
     }
   }, [requiresPremiumPayment, form]);
 
