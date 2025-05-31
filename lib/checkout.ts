@@ -501,8 +501,11 @@ export async function createOrder(
         }
       }
 
-      // Step 6: Clear user's cart (only when everything succeeds)
-      await db.delete(carts).where(eq(carts.userId, clerkId));
+      // Step 6: Clear user's cart ONLY for COD orders or when payment is immediately confirmed
+      // For online payments, cart will be cleared in the success callback/IPN handler
+      if (checkoutData.paymentMethod === 'COD') {
+        await db.delete(carts).where(eq(carts.userId, clerkId));
+      }
 
       // Success - no need to rollback stock
       shouldRollbackStock = false;
@@ -587,74 +590,7 @@ export async function validateOrderConsistency(orderId: number) {
   };
 }
 
-// Handle ZaloPay callback
-export async function handleZaloPayCallback(data: any, mac: string) {
-  const dataStr = JSON.stringify(data);
-  const verifyMac = crypto.createHmac('sha256', ZALOPAY_CONFIG.key2).update(dataStr).digest('hex');
-  if (verifyMac !== mac) {
-    throw new Error('Chữ ký ZaloPay không hợp lệ');
-  }
-
-  const order = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.transactionId, data.app_trans_id))
-    .limit(1);
-
-  if (!order[0]) {
-    throw new Error('Đơn hàng không tồn tại');
-  }
-
-  if (data.status === 1) {
-    await db
-      .update(orders)
-      .set({ paymentStatus: 'PAID', updatedAt: new Date() })
-      .where(eq(orders.id, order[0].id));
-    return { success: true, orderId: order[0].orderNumber };
-  } else {
-    await db
-      .update(orders)
-      .set({ paymentStatus: 'FAILED', updatedAt: new Date() })
-      .where(eq(orders.id, order[0].id));
-    throw new Error('Thanh toán ZaloPay thất bại');
-  }
-}
-
-// Handle MoMo callback
-export async function handleMoMoCallback(data: any) {
-  const rawSignature = `accessKey=${MOMO_CONFIG.accessKey}&amount=${data.amount}&extraData=${data.extraData}&message=${data.message}&orderId=${data.orderId}&orderInfo=${data.orderInfo}&orderType=${data.orderType}&partnerCode=${data.partnerCode}&payType=${data.payType}&requestId=${data.requestId}&responseTime=${data.responseTime}&resultCode=${data.resultCode}&transId=${data.transId}`;
-  const signature = crypto.createHmac('sha256', MOMO_CONFIG.secretKey).update(rawSignature).digest('hex');
-
-  if (signature !== data.signature) {
-    throw new Error('Chữ ký MoMo không hợp lệ');
-  }
-
-  const order = await db
-    .select()
-    .from(orders)
-    .where(eq(orders.transactionId, data.orderId))
-    .limit(1);
-
-  if (!order[0]) {
-    throw new Error('Đơn hàng không tồn tại');
-  }
-
-  if (data.resultCode === 0) {
-    await db
-      .update(orders)
-      .set({ paymentStatus: 'PAID', updatedAt: new Date() })
-      .where(eq(orders.id, order[0].id));
-    return { success: true, orderId: order[0].orderNumber };
-  } else {
-    await db
-      .update(orders)
-      .set({ paymentStatus: 'FAILED', updatedAt: new Date() })
-      .where(eq(orders.id, order[0].id));
-    throw new Error('Thanh toán MoMo thất bại');
-  }
-}
-
-// Handle VNPay callback
+// Enhanced VNPay callback handler with proper cart clearing
 export async function handleVNPayCallback(params: any) {
   const secureHash = params.vnp_SecureHash;
   delete params.vnp_SecureHash;
@@ -683,16 +619,243 @@ export async function handleVNPayCallback(params: any) {
   }
 
   if (params.vnp_ResponseCode === '00') {
+    // Payment successful - update order and clear cart
     await db
       .update(orders)
-      .set({ paymentStatus: 'PAID', updatedAt: new Date() })
+      .set({ 
+        paymentStatus: 'PAID', 
+        status: 'CONFIRMED', // Update status to confirmed
+        updatedAt: new Date() 
+      })
       .where(eq(orders.id, order[0].id));
+
+    // Clear user's cart ONLY when payment is successful
+    await db.delete(carts).where(eq(carts.userId, order[0].userId));
+    
+    return { success: true, orderId: order[0].orderNumber };
+  } else {
+    // Payment failed - update status and restore stock
+    await db
+      .update(orders)
+      .set({ 
+        paymentStatus: 'FAILED', 
+        status: 'CANCELLED',
+        updatedAt: new Date() 
+      })
+      .where(eq(orders.id, order[0].id));
+
+    // Restore stock for failed payment
+    const orderItemsToRestore = await db
+      .select({
+        bookId: orderItems.bookId,
+        quantity: orderItems.quantity
+      })
+      .from(orderItems)
+      .where(eq(orderItems.orderId, order[0].id));
+
+    for (const item of orderItemsToRestore) {
+      await db
+        .update(books)
+        .set({
+          availableCopies: sql`${books.availableCopies} + ${item.quantity}`,
+          updatedAt: new Date()
+        })
+        .where(eq(books.id, item.bookId));
+    }
+
+    throw new Error('Thanh toán VNPay thất bại');
+  }
+}
+
+// Enhanced ZaloPay callback handler
+export async function handleZaloPayCallback(data: any, mac: string) {
+  const dataStr = JSON.stringify(data);
+  const verifyMac = crypto.createHmac('sha256', ZALOPAY_CONFIG.key2).update(dataStr).digest('hex');
+  if (verifyMac !== mac) {
+    throw new Error('Chữ ký ZaloPay không hợp lệ');
+  }
+
+  const order = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.transactionId, data.app_trans_id))
+    .limit(1);
+
+  if (!order[0]) {
+    throw new Error('Đơn hàng không tồn tại');
+  }
+
+  if (data.status === 1) {
+    await db
+      .update(orders)
+      .set({ 
+        paymentStatus: 'PAID', 
+        status: 'CONFIRMED',
+        updatedAt: new Date() 
+      })
+      .where(eq(orders.id, order[0].id));
+
+    // Clear cart on successful payment
+    await db.delete(carts).where(eq(carts.userId, order[0].userId));
+    
     return { success: true, orderId: order[0].orderNumber };
   } else {
     await db
       .update(orders)
-      .set({ paymentStatus: 'FAILED', updatedAt: new Date() })
+      .set({ 
+        paymentStatus: 'FAILED', 
+        status: 'CANCELLED',
+        updatedAt: new Date() 
+      })
       .where(eq(orders.id, order[0].id));
-    throw new Error('Thanh toán VNPay thất bại');
+
+    // Restore stock for failed payment
+    const orderItemsToRestore = await db
+      .select({
+        bookId: orderItems.bookId,
+        quantity: orderItems.quantity
+      })
+      .from(orderItems)
+      .where(eq(orderItems.orderId, order[0].id));
+
+    for (const item of orderItemsToRestore) {
+      await db
+        .update(books)
+        .set({
+          availableCopies: sql`${books.availableCopies} + ${item.quantity}`,
+          updatedAt: new Date()
+        })
+        .where(eq(books.id, item.bookId));
+    }
+
+    throw new Error('Thanh toán ZaloPay thất bại');
+  }
+}
+
+// Enhanced MoMo callback handler
+export async function handleMoMoCallback(data: any) {
+  const rawSignature = `accessKey=${MOMO_CONFIG.accessKey}&amount=${data.amount}&extraData=${data.extraData}&message=${data.message}&orderId=${data.orderId}&orderInfo=${data.orderInfo}&orderType=${data.orderType}&partnerCode=${data.partnerCode}&payType=${data.payType}&requestId=${data.requestId}&responseTime=${data.responseTime}&resultCode=${data.resultCode}&transId=${data.transId}`;
+  const signature = crypto.createHmac('sha256', MOMO_CONFIG.secretKey).update(rawSignature).digest('hex');
+
+  if (signature !== data.signature) {
+    throw new Error('Chữ ký MoMo không hợp lệ');
+  }
+
+  const order = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.transactionId, data.orderId))
+    .limit(1);
+
+  if (!order[0]) {
+    throw new Error('Đơn hàng không tồn tại');
+  }
+
+  if (data.resultCode === 0) {
+    await db
+      .update(orders)
+      .set({ 
+        paymentStatus: 'PAID', 
+        status: 'CONFIRMED',
+        updatedAt: new Date() 
+      })
+      .where(eq(orders.id, order[0].id));
+
+    // Clear cart on successful payment
+    await db.delete(carts).where(eq(carts.userId, order[0].userId));
+    
+    return { success: true, orderId: order[0].orderNumber };
+  } else {
+    await db
+      .update(orders)
+      .set({ 
+        paymentStatus: 'FAILED', 
+        status: 'CANCELLED',
+        updatedAt: new Date() 
+      })
+      .where(eq(orders.id, order[0].id));
+
+    // Restore stock for failed payment
+    const orderItemsToRestore = await db
+      .select({
+        bookId: orderItems.bookId,
+        quantity: orderItems.quantity
+      })
+      .from(orderItems)
+      .where(eq(orderItems.orderId, order[0].id));
+
+    for (const item of orderItemsToRestore) {
+      await db
+        .update(books)
+        .set({
+          availableCopies: sql`${books.availableCopies} + ${item.quantity}`,
+          updatedAt: new Date()
+        })
+        .where(eq(books.id, item.bookId));
+    }
+
+    throw new Error('Thanh toán MoMo thất bại');
+  }
+}
+
+// Add function to handle payment timeout/expiry (should be called periodically)
+export async function cleanupExpiredPendingOrders() {
+  try {
+    // Find orders that are pending for more than 30 minutes (or your desired timeout)
+    const expiredOrders = await db
+      .select()
+      .from(orders)
+      .where(
+        and(
+          eq(orders.paymentStatus, 'PENDING'),
+          eq(orders.status, 'PENDING'),
+          lte(orders.createdAt, new Date(Date.now() - 30 * 60 * 1000)) // 30 minutes ago
+        )
+      );
+
+    for (const order of expiredOrders) {
+      // Update order status to expired
+      await db
+        .update(orders)
+        .set({ 
+          paymentStatus: 'EXPIRED', 
+          status: 'CANCELLED',
+          updatedAt: new Date() 
+        })
+        .where(eq(orders.id, order.id));
+
+      // Restore stock
+      const orderItemsToRestore = await db
+        .select({
+          bookId: orderItems.bookId,
+          quantity: orderItems.quantity
+        })
+        .from(orderItems)
+        .where(eq(orderItems.orderId, order.id));
+
+      for (const item of orderItemsToRestore) {
+        await db
+          .update(books)
+          .set({
+            availableCopies: sql`${books.availableCopies} + ${item.quantity}`,
+            updatedAt: new Date()
+          })
+          .where(eq(books.id, item.bookId));
+      }
+
+      // Rollback coupon usage if applicable
+      if (order.couponId) {
+        await db
+          .update(coupons)
+          .set({ 
+            usedCount: sql`GREATEST(0, ${coupons.usedCount} - 1)`,
+          })
+          .where(eq(coupons.id, order.couponId));
+      }
+    }
+
+    console.log(`Cleaned up ${expiredOrders.length} expired orders`);
+  } catch (error) {
+    console.error('Error cleaning up expired orders:', error);
   }
 }

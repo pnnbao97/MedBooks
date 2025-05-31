@@ -4,9 +4,9 @@ import { relations } from "drizzle-orm";
 
 export const STATUS_ENUM = pgEnum('status', ['PENDING', 'APPROVED', 'REJECTED']);
 export const ROLE_ENUM = pgEnum('role', ['USER', 'ADMIN']);
-export const ORDER_STATUS_ENUM = pgEnum('order_status', ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']);
+export const ORDER_STATUS_ENUM = pgEnum('order_status', ['PENDING', 'PROCESSING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED']);
 export const PAYMENT_METHOD_ENUM = pgEnum('payment_method', ['COD', 'BANKING', 'MOMO', 'ZALOPAY', 'VNPAY', 'PAYPAL']);
-export const PAYMENT_STATUS_ENUM = pgEnum('payment_status', ['PENDING', 'PAID', 'FAILED', 'REFUNDED']);
+export const PAYMENT_STATUS_ENUM = pgEnum('payment_status', ['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED']);
 export const GENDER_ENUM = pgEnum('gender', ['MALE', 'FEMALE', 'OTHER']);
 
 export const users = pgTable("users", {
