@@ -287,6 +287,8 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
   const formatDate = (date: Date) =>
     date.toISOString().replace(/[-:T.]/g, '').slice(0, 14);
 
+  
+
   // Tạo object params theo thứ tự alphabet như trong URL mẫu
   const paramsObj = {
     vnp_Amount: (orderSummary.total * 100).toString(),
@@ -298,7 +300,7 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
     vnp_OrderInfo: `Thanh toan don hang :${orderId}`,
     vnp_OrderType: 'other',
     vnp_ReturnUrl: 'https://vmedbook.com/checkout/callback/vnpay',
-    vnp_TmnCode: process.env.VNPAY_TMN_CODE || 'P122GLK7',
+    vnp_TmnCode: process.env.VNPAY_TMN_CODE,
     vnp_TxnRef: orderId.toString(),
     vnp_Version: '2.1.0'
   };
@@ -316,7 +318,7 @@ async function createVNPayPayment(order: any, checkoutData: CheckoutData, orderS
   const signData = tempParams.toString();
 
   const secureHash = crypto
-    .createHmac('sha512', process.env.VNPAY_HASH_KEY || '50YOXVSX2GSZY9K3N9ZHD88VUU6MMEF2')
+    .createHmac('sha512', VNPAY_CONFIG.hashSecret)
     .update(signData)
     .digest('hex');
 
@@ -616,6 +618,15 @@ export async function handleVNPayCallback(params: any) {
 
   if (!order[0]) {
     throw new Error('Đơn hàng không tồn tại');
+  }
+
+  if (order[0].paymentStatus !== 'PENDING') {
+    throw new Error('Đơn hàng đã được xử lý');
+  }
+
+  const vnpAmount = parseInt(params.vnp_Amount) / 100;
+  if (vnpAmount !== order[0].totalAmount) {
+    throw new Error('Số tiền không khớp');
   }
 
   if (params.vnp_ResponseCode === '00') {

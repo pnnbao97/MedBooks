@@ -467,9 +467,9 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                             <p className="text-sm text-slate-600 mt-1 font-medium">Thanh toán bằng tiền mặt khi nhận sách</p>
                                           </div>
                                         </div>
-                                        <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold">
+                                        {/* <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold">
                                           Phổ biến
-                                        </Badge>
+                                        </Badge> */}
                                       </div>
                                     </Label>
                                   </div>
@@ -478,8 +478,8 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
 
                               <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                                 <div className="flex items-center space-x-4">
-                                  <RadioGroupItem value="BANKING" id="banking" className="w-5 h-5 border-2 border-teal-500" />
-                                  <Label htmlFor="banking" className="cursor-pointer flex-1">
+                                  <RadioGroupItem value="VNPAY" id="vnpay" className="w-5 h-5 border-2 border-red-500"  />
+                                  <Label htmlFor="vnpay" className="cursor-pointer flex-1">
                                     <div className="flex items-center gap-4">
                                       <div className="w-14 h-14 bg-gradient-to-br from-teal-600 to-cyan-700 rounded-xl flex items-center justify-center shadow-lg">
                                         <Building2 className="w-7 h-7 text-white" />
@@ -493,7 +493,7 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                 </div>
                               </div>
 
-                              <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
+                              {/* <div className="relative p-6 border-2 border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all duration-200 cursor-pointer group bg-slate-50/50">
                                 <div className="flex items-center space-x-4">
                                   <RadioGroupItem value="ZALOPAY" id="zalopay" className="w-5 h-5 border-2 border-blue-500" />
                                   <Label htmlFor="zalopay" className="cursor-pointer flex-1">
@@ -542,7 +542,7 @@ const CheckoutClient = ({ userId }: CheckoutClientProps) => {
                                     </div>
                                   </Label>
                                 </div>
-                              </div>
+                              </div> */}
                             </RadioGroup>
                           </FormControl>
                         </FormItem>
